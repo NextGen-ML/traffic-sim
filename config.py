@@ -22,3 +22,4 @@ class Paths(Enum):
 
 MAX_VELOCITY = 10
 ACCELERATION = 5
+COLLISION_DISTANCE = 50 # def too large

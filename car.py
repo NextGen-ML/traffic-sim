@@ -64,7 +64,7 @@ class Car:
             
             distance = ((my_future_x - other_future_x) ** 2 + (my_future_y - other_future_y) ** 2) ** 0.5
             
-            if distance < 50:
+            if distance < COLLISION_DISTANCE:
                 return True
 
         return False
