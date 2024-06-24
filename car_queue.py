@@ -5,6 +5,8 @@ class CarQueue:
         self.host_car = host_car
         self.motion_path_queue = {host_car.path: [host_car]}
         self.lock = threading.Lock()
+        self.timer = None
+        self.active = True
 
     def join(self, car):
         with self.lock:
@@ -20,7 +22,9 @@ class CarQueue:
                 self.motion_path_queue[path] = [car for car in cars if not car.has_crossed_intersection()]
                 if len(self.motion_path_queue[path]) == 0:
                     del self.motion_path_queue[path]
-            threading.Timer(10, self.reorder_queue).start()
+            if self.active:
+                self.timer = threading.Timer(10, self.reorder_queue)
+                self.timer.start()
 
     def reorder_queue(self):
         with self.lock:
@@ -32,11 +36,15 @@ class CarQueue:
 
     def update_host_car(self):
         if self.motion_path_queue:
-            # Set the host car to the first car in the list of the first path
             first_path = next(iter(self.motion_path_queue))
             self.host_car = self.motion_path_queue[first_path][0]
-            # Reset all cars' right of way and set only the host car's right of way to True
             for path, cars in self.motion_path_queue.items():
                 for car in cars:
                     car.row = False
             self.host_car.row = True
+
+    def shutdown(self):
+        with self.lock:
+            self.active = False
+            if self.timer:
+                self.timer.cancel()

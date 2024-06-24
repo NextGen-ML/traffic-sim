@@ -42,7 +42,7 @@ def run_simulation():
         rect_y = (SCREEN_HEIGHT / 2) - (rect_height / 2)  # Center the rectangle
 
         # Draw the rectangle
-        pygame.draw.rect(screen, (0, 0,     ), (rect_x, rect_y, rect_width, rect_height))
+        pygame.draw.rect(screen, (0, 0,  255), (rect_x, rect_y, rect_width, rect_height))
         
 
         car: Car
