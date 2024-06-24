@@ -81,34 +81,91 @@ class Car:
             if car.queue is None:
                 
                 if car.path == self.path: # check for equiv. paths as well
-                    print("hello")
                     if car.row == None or car.row == True:
                         self.row == True
                 else:
                     if self.will_collide(car):
                         print("COLLISION")
                         if self.distance_to_intersection() < car.distance_to_intersection():
-                            
+                            if self.queue is None:
+                                self.queue = CarQueue(self)
+                            self.queue.join(car)
                             self.row = True
-                            
                         elif self.distance_to_intersection() == car.distance_to_intersection():
                             print("mismatch")
                             
                             if self.path == Paths.BOTTOM_TOP or self.path == Paths.TOP_BOTTOM:
+                                if self.queue is None:
+                                    self.queue = CarQueue(self)
+                                self.queue.join(car)
                                 self.row = True
                             else:
-                                self.row = False
+                                if car.queue is None:
+                                    car.queue = CarQueue(car)
+                                car.queue.join(self)
+
                         else:
-                            self.row = False
-        #             else:
-        #                 self.row = True
+                            if car.queue is None:
+                                car.queue = CarQueue(car)
+                            car.queue.join(self)
+            else:
+                car.queue.join(self)
+                self.row = (car.queue.host_car.path == self.path)
+                
+        if self.queue:
+            self.queue.update_queue()
     
+    
+    def get_car_ahead(self, all_cars):
+        min_distance = float('inf')
+        car_ahead = None
+        for car in all_cars:
+            if car.id != self.id and car.path == self.path:
+                distance = self.calculate_distance_ahead(car)
+                if distance > 0 and distance < min_distance:
+                    min_distance = distance
+                    car_ahead = car
+        return car_ahead
+    
+    def calculate_distance_ahead(self, other_car):
+        if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM]:
+            distance = other_car.y_pos - self.y_pos
+        elif self.path in [Paths.LEFT_RIGHT, Paths.RIGHT_LEFT]:
+            distance = other_car.x_pos - self.x_pos
+        return distance
+    
+    
+    def adjust_speed_to_maintain_gap(self, car_ahead):
+        desired_gap = 20
+        actual_gap = self.calculate_distance_ahead(car_ahead) - 20
+
+        if actual_gap < desired_gap:
+            self.ay = -1 * ACCELERATION if self.vy != 0 else 0
+        elif actual_gap > desired_gap + 5: 
+            self.ay = ACCELERATION if abs(self.vy) < MAX_VELOCITY else 0
+        else:
+            self.ax = 0
+            self.ay = 0
+
+                    
 
     def update(self, cars):
         self.get_cars(cars)
+
         
         if len(self.nearby_cars) > 0:
             self.calculate_row()
+            
+        car_ahead = self.get_car_ahead(self.nearby_cars)
+            
+        if car_ahead:
+            self.adjust_speed_to_maintain_gap(car_ahead)
+        
+            
+        if not self.at_border() and self.has_crossed_intersection():
+            if self.queue:
+                self.queue.update_queue()
+
         
         if not self.at_border():
             dt = 1/FRAME_RATE
@@ -119,26 +176,24 @@ class Car:
                     if self.ay == 0:
                         deltaY = ((SCREEN_HEIGHT / 2) + 50) - self.y_pos
                         self.ay = (0-(self.vy**2))/(2*deltaY)
-                        print(self.ay)
+
                 elif self.path == Paths.TOP_BOTTOM:
                     if self.ay == 0:
                         deltaY = ((SCREEN_HEIGHT / 2) - 50) - self.y_pos
                         self.ay = (0-(self.vy**2))/(2*deltaY)
-                        print(self.ay)
                 
                 elif self.path == Paths.LEFT_RIGHT:
                     if self.ax == 0:
-                        print(f"initial: {self.ax}")
                         deltaX = ((SCREEN_WIDTH / 2) - 50) - self.x_pos
                         self.ax = (0-(self.vx**2))/(2*deltaX)
-                        print(deltaX)
-                        
+                                                
                 elif self.path == Paths.RIGHT_LEFT:
                     if self.ax == 0:
-                        print(f"initial: {self.ax}")
                         deltaX = ((SCREEN_WIDTH / 2) + 50) - self.x_pos
                         self.ax = (0-(self.vx**2))/(2*deltaX)
-                        print(self.ax)
+                        
+
+
             
             elif self.row is True:
                 if self.vx == 0 or self.vy == 0:
@@ -160,6 +215,8 @@ class Car:
                     elif self.path is Paths.RIGHT_LEFT:
                         self.ax = ACCELERATION
                         self.starting = True
+
+                        
             
             if abs(self.vx) < 0.1 and not self.starting:
                 self.vx = 0
@@ -191,6 +248,36 @@ class Car:
             
             self.x_pos += (self.vx * dt)
             self.y_pos += (self.vy * dt)
+            
+    def has_crossed_intersection(self):
+        intersection_x = SCREEN_WIDTH / 2
+        intersection_y = SCREEN_HEIGHT / 2
+
+        # Adjust the intersection point based on the car's path
+        if self.path == Paths.LEFT_RIGHT:
+            intersection_x += 50
+        elif self.path == Paths.RIGHT_LEFT:
+            intersection_x -= 50
+        elif self.path == Paths.BOTTOM_TOP:
+            intersection_y += 50
+        elif self.path == Paths.TOP_BOTTOM:
+            intersection_y -= 50
+
+        # Check if the car has crossed the intersection based on its path
+        if self.path in [Paths.LEFT_RIGHT, Paths.RIGHT_LEFT]:
+            if self.path == Paths.LEFT_RIGHT and self.x_pos > intersection_x:
+                return True
+            elif self.path == Paths.RIGHT_LEFT and self.x_pos < intersection_x:
+                return True
+        elif self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM]:
+            if self.path == Paths.BOTTOM_TOP and self.y_pos > intersection_y:
+                return True
+            elif self.path == Paths.TOP_BOTTOM and self.y_pos < intersection_y:
+                return True
+
+        return False
+
+
             
     # helper function to make stupid code easier
     def move_in_direction(self):
