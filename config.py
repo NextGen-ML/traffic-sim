@@ -1,7 +1,6 @@
 from enum import Enum
 import pygame
 import time
-from car_queue import CarQueue
 
 SCREEN_WIDTH = 500
 SCREEN_HEIGHT = 500
@@ -23,3 +22,24 @@ class Paths(Enum):
 MAX_VELOCITY = 10
 ACCELERATION = 5
 COLLISION_DISTANCE = 50 # def too large
+
+
+def is_partner_path(path1, path2):
+    if path1 in [Paths.TOP_BOTTOM, Paths.BOTTOM_TOP] and path2 in [Paths.TOP_BOTTOM, Paths.BOTTOM_TOP]:
+        return True
+    elif path1 in [Paths.LEFT_RIGHT, Paths.RIGHT_LEFT] and path2 in [Paths.LEFT_RIGHT, Paths.RIGHT_LEFT]:
+        return True
+    
+    return False
+
+def get_partner_path(path):
+    if path == Paths.TOP_BOTTOM:
+        return Paths.BOTTOM_TOP
+    elif path == Paths.BOTTOM_TOP:
+        return Paths.TOP_BOTTOM
+    elif path == Paths.LEFT_RIGHT:
+        return Paths.RIGHT_LEFT
+    elif path == Paths.RIGHT_LEFT:
+        return Paths.LEFT_RIGHT
+    
+    return None

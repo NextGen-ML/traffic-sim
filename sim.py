@@ -21,6 +21,9 @@ def run_simulation():
         
         if ( i % (144*2) == 30 and len(cars) < 4):
             cars.append(Car(StartingPos.TOP, Paths.TOP_BOTTOM, randint(0, 100)))
+            
+        if ( i % (144*2) == 30 and len(cars) < 4):
+            cars.append(Car(StartingPos.BOTTOM, Paths.BOTTOM_TOP, randint(0, 100)))
         
         if ( i % (144*2) == 0 and len(cars) < 4):
             cars.append(Car(StartingPos.LEFT, Paths.LEFT_RIGHT, randint(0, 100)))

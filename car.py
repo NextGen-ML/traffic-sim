@@ -1,4 +1,5 @@
 from config import *
+from car_queue import CarQueue
 
 class Car:
     def __init__(self, starting_pos, path, id):
@@ -34,7 +35,7 @@ class Car:
         self.row = row
         
     def __repr__(self):
-        return f"{self.id}, {self.starting_pos}, {self.path}"
+        return f"{self.id}, {self.starting_pos}, {self.path}, {self.row}"
         
     def get_row(self):
         return self.row
@@ -86,7 +87,7 @@ class Car:
         if car is not None:
             if car.queue is None:
                 
-                if car.path == self.path: # check for equiv. paths as well
+                if is_partner_path(self.path, car.path): # check for equiv. paths as well
                     if car.row == None or car.row == True:
                         self.row == True
                 else:
@@ -113,9 +114,7 @@ class Car:
                                 car.queue.join(self)
 
                         else:
-                            print("goodbye world")
                             if car.queue is None:
-                                print("goodbyer world")
                                 car.queue = CarQueue(car)
                                 
                             car.queue.join(self)
@@ -166,6 +165,15 @@ class Car:
             else:
                 self.ax = 0
                 self.ay = 0
+                
+        if self.path in [Paths.LEFT_RIGHT, Paths.RIGHT_LEFT]:
+            if actual_gap < desired_gap:
+                self.ax = -1 * ACCELERATION if self.vx != 0 else 0
+            elif actual_gap > desired_gap + 5: 
+                self.ax = ACCELERATION if abs(self.vx) < MAX_VELOCITY else 0
+            else:
+                self.ax = 0
+                self.ay = 0
 
                     
 
@@ -187,6 +195,8 @@ class Car:
             if self.row == None:
                 self.vx, self.vy = self.move_in_direction()
             elif self.row is False: # Add other paths
+                if (i % 144 == 0):
+                    print(self.id)
                 if self.path == Paths.BOTTOM_TOP:
                     if self.ay == 0:
                         deltaY = ((SCREEN_HEIGHT / 2) + 50) - self.y_pos

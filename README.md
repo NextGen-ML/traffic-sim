@@ -2,6 +2,6 @@
 
 run ```sim.py```
 
-things to do:
-1. implement wait time for ROW
-2. add queue
+bugs:
+1. ROW stops cars that pass the intersection (fix method)
+2. duplication of cars????? no clue what's goin on there
