@@ -206,10 +206,7 @@ class Car:
                     if self.ax == 0:
                         deltaX = ((SCREEN_WIDTH / 2) + 50) - self.x_pos
                         self.ax = (0-(self.vx**2))/(2*deltaX)
-                        
-
-
-            
+                    
             elif self.row is True:
                 if self.vx == 0 or self.vy == 0:
                     self.starting = True
@@ -288,8 +285,6 @@ class Car:
             if self.path == Paths.BOTTOM_TOP and self.y_pos > intersection_y:
                 return True
             elif self.path == Paths.TOP_BOTTOM and self.y_pos < intersection_y:
-                print(self.y_pos)
-                print(intersection_y)
                 return True
 
         return False
