@@ -19,11 +19,11 @@ def run_simulation():
 
     while running:
         
-        if ( i % (144*2) == 30 and len(cars) < 3):
+        if ( i % (144*2) == 30 and len(cars) < 4):
             cars.append(Car(StartingPos.TOP, Paths.TOP_BOTTOM, randint(0, 100)))
         
-        if (i >(144*2)):
-            i = 0
+        if ( i % (144*2) == 0 and len(cars) < 4):
+            cars.append(Car(StartingPos.LEFT, Paths.LEFT_RIGHT, randint(0, 100)))
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -42,7 +42,8 @@ def run_simulation():
         rect_y = (SCREEN_HEIGHT / 2) - (rect_height / 2)  # Center the rectangle
 
         # Draw the rectangle
-        pygame.draw.rect(screen, (0, 0,  255), (rect_x, rect_y, rect_width, rect_height))
+        pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height), width=5)
+
         
 
         car: Car
@@ -51,7 +52,7 @@ def run_simulation():
         for car in cars:
             # print(car.get_row())
             car.draw(screen)
-            car.update(cars)
+            car.update(cars, i)
                 
 
 

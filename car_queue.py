@@ -10,21 +10,49 @@ class CarQueue:
 
     def join(self, car):
         with self.lock:
-            if car.path in self.motion_path_queue:
-                self.motion_path_queue[car.path].append(car)
-            else:
-                self.motion_path_queue[car.path] = [car]
-            car.queue = self
+            # Search for any car with the same ID in all paths before adding
+            car_exists = any(car.id == existing_car.id for path in self.motion_path_queue.values() for existing_car in path)
 
-    def update_queue(self):
+            if not car_exists:
+                if car.path in self.motion_path_queue:
+                    self.motion_path_queue[car.path].append(car)
+                else:
+                    self.motion_path_queue[car.path] = [car]
+                car.queue = self
+
+
+    def update_queue(self, i):
         with self.lock:
+            current_top_path = next(iter(self.motion_path_queue)) if self.motion_path_queue else None
+
             for path, cars in list(self.motion_path_queue.items()):
                 self.motion_path_queue[path] = [car for car in cars if not car.has_crossed_intersection()]
-                if len(self.motion_path_queue[path]) == 0:
+                
+
+                if len(self.motion_path_queue[path]) == 1:
+                    if path == current_top_path:
+                        first_path, first_cars = next(iter(self.motion_path_queue.items()))
+                        del self.motion_path_queue[first_path]
+                        self.motion_path_queue[first_path] = first_cars
+                        self.update_host_car()
+                
+                if len(self.motion_path_queue[path])==0:
                     del self.motion_path_queue[path]
+                
+        
+                    
+
+                        
+            
+            if (i % 144 == 0):
+                print(self.motion_path_queue)
+
             if self.active:
+                if self.timer:
+                    self.timer.cancel()
                 self.timer = threading.Timer(10, self.reorder_queue)
                 self.timer.start()
+
 
     def reorder_queue(self):
         with self.lock:
@@ -39,9 +67,12 @@ class CarQueue:
             first_path = next(iter(self.motion_path_queue))
             self.host_car = self.motion_path_queue[first_path][0]
             for path, cars in self.motion_path_queue.items():
-                for car in cars:
-                    car.row = False
-            self.host_car.row = True
+                if path == first_path:
+                    for car in cars:
+                        car.row = True
+                else:
+                    for car in cars:
+                        car.row = False
 
     def shutdown(self):
         with self.lock:

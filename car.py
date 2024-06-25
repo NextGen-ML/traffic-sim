@@ -33,6 +33,9 @@ class Car:
     def set_row(self, row):
         self.row = row
         
+    def __repr__(self):
+        return f"{self.id}, {self.starting_pos}, {self.path}"
+        
     def get_row(self):
         return self.row
     
@@ -74,10 +77,13 @@ class Car:
         other: Car
         return ((self.x_pos - other.x_pos) ** 2 + (self.y_pos - other.y_pos) ** 2) ** 0.5
     
-    def calculate_row(self):
+    def calculate_row(self, i):
         car: Car
 
-        for car in self.nearby_cars:
+
+        car = self.get_car_ahead(self.nearby_cars) if self.get_car_ahead(self.nearby_cars) is not None else self.nearby_cars[slice(1)][0]
+
+        if car is not None:
             if car.queue is None:
                 
                 if car.path == self.path: # check for equiv. paths as well
@@ -87,9 +93,11 @@ class Car:
                     if self.will_collide(car):
                         print("COLLISION")
                         if self.distance_to_intersection() < car.distance_to_intersection():
+                            print("hello world")
                             if self.queue is None:
                                 self.queue = CarQueue(self)
                             self.queue.join(car)
+                            self.queue.join(self)
                             self.row = True
                         elif self.distance_to_intersection() == car.distance_to_intersection():
                             print("mismatch")
@@ -105,15 +113,25 @@ class Car:
                                 car.queue.join(self)
 
                         else:
+                            print("goodbye world")
                             if car.queue is None:
+                                print("goodbyer world")
                                 car.queue = CarQueue(car)
+                                
                             car.queue.join(self)
+                            car.queue.join(self)
+                            
+                            if self.id == 13:
+                                print("hi")
+                                print(car.id)
+                                print(car.queue.motion_path_queue)
             else:
                 car.queue.join(self)
                 self.row = (car.queue.host_car.path == self.path)
                 
         if self.queue:
-            self.queue.update_queue()
+            if ( i% 3 == 0):
+                self.queue.update_queue(i)
     
     
     def get_car_ahead(self, all_cars):
@@ -149,22 +167,17 @@ class Car:
 
                     
 
-    def update(self, cars):
+    def update(self, cars, i):
         self.get_cars(cars)
 
         
         if len(self.nearby_cars) > 0:
-            self.calculate_row()
+            self.calculate_row(i)
             
         car_ahead = self.get_car_ahead(self.nearby_cars)
             
         if car_ahead:
             self.adjust_speed_to_maintain_gap(car_ahead)
-        
-            
-        if not self.at_border() and self.has_crossed_intersection():
-            if self.queue:
-                self.queue.update_queue()
 
         
         if not self.at_border():
@@ -255,13 +268,13 @@ class Car:
 
         # Adjust the intersection point based on the car's path
         if self.path == Paths.LEFT_RIGHT:
-            intersection_x += 50
+            intersection_x += 100
         elif self.path == Paths.RIGHT_LEFT:
-            intersection_x -= 50
+            intersection_x -= 100
         elif self.path == Paths.BOTTOM_TOP:
-            intersection_y += 50
+            intersection_y += 100
         elif self.path == Paths.TOP_BOTTOM:
-            intersection_y -= 50
+            intersection_y -= 100
 
         # Check if the car has crossed the intersection based on its path
         if self.path in [Paths.LEFT_RIGHT, Paths.RIGHT_LEFT]:
@@ -273,6 +286,8 @@ class Car:
             if self.path == Paths.BOTTOM_TOP and self.y_pos > intersection_y:
                 return True
             elif self.path == Paths.TOP_BOTTOM and self.y_pos < intersection_y:
+                print(self.y_pos)
+                print(intersection_y)
                 return True
 
         return False
