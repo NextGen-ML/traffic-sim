@@ -156,14 +156,16 @@ class Car:
     def adjust_speed_to_maintain_gap(self, car_ahead):
         desired_gap = 20
         actual_gap = self.calculate_distance_ahead(car_ahead) - 20
-
-        if actual_gap < desired_gap:
-            self.ay = -1 * ACCELERATION if self.vy != 0 else 0
-        elif actual_gap > desired_gap + 5: 
-            self.ay = ACCELERATION if abs(self.vy) < MAX_VELOCITY else 0
-        else:
-            self.ax = 0
-            self.ay = 0
+        
+        
+        if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM]:
+            if actual_gap < desired_gap:
+                self.ay = -1 * ACCELERATION if self.vy != 0 else 0
+            elif actual_gap > desired_gap + 5: 
+                self.ay = ACCELERATION if abs(self.vy) < MAX_VELOCITY else 0
+            else:
+                self.ax = 0
+                self.ay = 0
 
                     
 
