@@ -13,7 +13,7 @@ def run_simulation():
     
     cars = []
     
-    cars.append(Car(StartingPos.LEFT, Paths.LEFT_RIGHT, 2))
+    # cars.append(Car(StartingPos.LEFT, Paths.LEFT_RIGHT, 2))
     
     i = 0
 

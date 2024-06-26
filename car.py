@@ -277,13 +277,13 @@ class Car:
 
         # Adjust the intersection point based on the car's path
         if self.path == Paths.LEFT_RIGHT:
-            intersection_x += 100
+            intersection_x += 75
         elif self.path == Paths.RIGHT_LEFT:
-            intersection_x -= 100
+            intersection_x -= 75
         elif self.path == Paths.BOTTOM_TOP:
-            intersection_y += 100
+            intersection_y += 75
         elif self.path == Paths.TOP_BOTTOM:
-            intersection_y -= 100
+            intersection_y -= 75
 
         # Check if the car has crossed the intersection based on its path
         if self.path in [Paths.LEFT_RIGHT, Paths.RIGHT_LEFT]:
