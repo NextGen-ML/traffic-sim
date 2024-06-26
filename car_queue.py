@@ -39,7 +39,13 @@ class CarQueue:
 
             if i % 144 == 0:
                 print(f"{self.host_car}, {self.motion_path_queue}")
+                
+            self.check_host_car()
 
+    def check_host_car(self):
+        top_path = next(iter(self.motion_path_queue))
+        self.host_car = self.motion_path_queue[top_path][0]
+    
     def run_queue_management(self):
         while self.active:
             time.sleep(WAIT_TIME)  # Sleep for 10 seconds or another suitable interval

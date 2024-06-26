@@ -235,7 +235,7 @@ class Car:
                         self.ax = ACCELERATION
                         self.starting = True
                     elif self.path is Paths.RIGHT_LEFT:
-                        self.ax = ACCELERATION
+                        self.ax = -ACCELERATION
                         self.starting = True
 
                         

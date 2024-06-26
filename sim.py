@@ -27,6 +27,9 @@ def run_simulation():
         
         if ( i % (144*2) == 0 and len(cars) < 4):
             cars.append(Car(StartingPos.LEFT, Paths.LEFT_RIGHT, randint(0, 100)))
+            
+        if ( i % (144*2) == 0 and len(cars) < 4):
+            cars.append(Car(StartingPos.RIGHT, Paths.RIGHT_LEFT, randint(0, 100)))
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
