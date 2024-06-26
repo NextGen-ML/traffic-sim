@@ -42,7 +42,7 @@ class CarQueue:
 
     def run_queue_management(self):
         while self.active:
-            time.sleep(10)  # Sleep for 10 seconds or another suitable interval
+            time.sleep(WAIT_TIME)  # Sleep for 10 seconds or another suitable interval
             print("hi")
             self.reorder_queue()
 

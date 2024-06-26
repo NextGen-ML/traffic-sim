@@ -153,8 +153,8 @@ class Car:
     
     
     def adjust_speed_to_maintain_gap(self, car_ahead):
-        desired_gap = 20
-        actual_gap = self.calculate_distance_ahead(car_ahead) - 20
+        desired_gap = DISTANCE_BETWEEN_CARS
+        actual_gap = self.calculate_distance_ahead(car_ahead) - DISTANCE_BETWEEN_CARS
         
         
         if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM]:

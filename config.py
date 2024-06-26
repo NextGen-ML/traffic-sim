@@ -22,6 +22,8 @@ class Paths(Enum):
 MAX_VELOCITY = 10
 ACCELERATION = 5
 COLLISION_DISTANCE = 50 # def too large
+WAIT_TIME = 10
+DISTANCE_BETWEEN_CARS = 20
 
 
 def is_partner_path(path1, path2):
