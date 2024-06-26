@@ -216,6 +216,10 @@ class Car:
                     if self.ax == 0:
                         deltaX = ((SCREEN_WIDTH / 2) + 50) - self.x_pos
                         self.ax = (0-(self.vx**2))/(2*deltaX)
+                        
+                if car_ahead is not None and self.calculate_distance_ahead(car_ahead) < DISTANCE_BETWEEN_CARS:
+                    self.vx = 0
+                    self.vy = 0
                     
             elif self.row is True:
                 if self.vx == 0 or self.vy == 0:
@@ -246,7 +250,7 @@ class Car:
                 
             if abs(self.vy) < 0.1 and not self.starting:
                 self.vy = 0
-                self.ay = 0 
+                self.ay = 0
                 
             if self.starting_pos == StartingPos.BOTTOM:
                 self.vy = min(self.vy, 0)  # Prevent moving up
@@ -281,9 +285,9 @@ class Car:
         elif self.path == Paths.RIGHT_LEFT:
             intersection_x -= 75
         elif self.path == Paths.BOTTOM_TOP:
-            intersection_y += 75
-        elif self.path == Paths.TOP_BOTTOM:
             intersection_y -= 75
+        elif self.path == Paths.TOP_BOTTOM:
+            intersection_y += 75
 
         # Check if the car has crossed the intersection based on its path
         if self.path in [Paths.LEFT_RIGHT, Paths.RIGHT_LEFT]:
@@ -292,9 +296,9 @@ class Car:
             elif self.path == Paths.RIGHT_LEFT and self.x_pos < intersection_x:
                 return True
         elif self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM]:
-            if self.path == Paths.BOTTOM_TOP and self.y_pos > intersection_y:
+            if self.path == Paths.BOTTOM_TOP and self.y_pos < intersection_y:
                 return True
-            elif self.path == Paths.TOP_BOTTOM and self.y_pos < intersection_y:
+            elif self.path == Paths.TOP_BOTTOM and self.y_pos > intersection_y:
                 return True
 
         return False
@@ -322,6 +326,16 @@ class Car:
         elif self.starting_pos == StartingPos.RIGHT:
             return self.x_pos <= RENDER_BORDER
         return False
+    
+    def remove_from_simulation(self):
+        if self.queue:
+            with self.queue.lock:
+                for path, cars in list(self.queue.motion_path_queue.items()):
+                    if self in cars:
+                        cars.remove(self)
+                        if not cars:
+                            del self.queue.motion_path_queue[path]
+        print(f"Car {self.id} removed from simulation.")
     
     def draw(self, screen):
         pygame.draw.rect(screen, (255, 0, 0), (self.x_pos, self.y_pos, 10, 10))

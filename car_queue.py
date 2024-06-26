@@ -28,7 +28,7 @@ class CarQueue:
         with self.lock:
             current_top_path = next(iter(self.motion_path_queue)) if self.motion_path_queue else None
             for path, cars in list(self.motion_path_queue.items()):
-                self.motion_path_queue[path] = [car for car in cars if not car.has_crossed_intersection() or car.at_border()]
+                self.motion_path_queue[path] = [car for car in cars if not car.has_crossed_intersection() or not car.at_border()]
                 
                 for car in self.motion_path_queue[path]:
                     if is_partner_path(car.path, self.host_car.path):
@@ -58,6 +58,7 @@ class CarQueue:
                 first_path, first_cars = next(iter(self.motion_path_queue.items()))
                 del self.motion_path_queue[first_path]
                 self.motion_path_queue[first_path] = first_cars
+                
                 self.update_host_car()
 
     def update_host_car(self):
@@ -66,7 +67,9 @@ class CarQueue:
             self.host_car = self.motion_path_queue[first_path][0]
             for path, cars in self.motion_path_queue.items():
                 for car in cars:
-                    car.row = (is_partner_path(car.path, self.host_car.path))
+                    car.row = False
+            
+
 
     def shutdown(self):
         with self.lock:
