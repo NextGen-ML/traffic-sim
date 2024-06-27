@@ -38,7 +38,7 @@ class CarQueue:
                     del self.motion_path_queue[path]
 
             if i % 144 == 0:
-                print(f"{self.host_car}, {self.motion_path_queue}")
+                print(f"{self.host_car}")
                 
             self.check_host_car()
 

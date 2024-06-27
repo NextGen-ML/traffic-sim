@@ -126,7 +126,7 @@ class Car:
                                 print(car.queue.motion_path_queue)
             else:
                 car.queue.join(self)
-                self.row = (car.queue.host_car.path == self.path)
+                self.row = (is_partner_path(car.queue.host_car.path, self.path))
                 
         if self.queue:
             if ( i% 3 == 0):
