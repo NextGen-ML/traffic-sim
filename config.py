@@ -2,6 +2,7 @@ from enum import Enum
 import pygame
 import time
 
+# Constants
 SCREEN_WIDTH = 500
 SCREEN_HEIGHT = 500
 RENDER_BORDER = 10
@@ -18,14 +19,7 @@ class Paths(Enum):
     BOTTOM_TOP = 1
     LEFT_RIGHT = 2
     RIGHT_LEFT = 3
-
-MAX_VELOCITY = 10
-ACCELERATION = 5
-COLLISION_DISTANCE = 50 # def too large
-WAIT_TIME = 10
-DISTANCE_BETWEEN_CARS = 20
-
-
+    
 def is_partner_path(path1, path2):
     if path1 in [Paths.TOP_BOTTOM, Paths.BOTTOM_TOP] and path2 in [Paths.TOP_BOTTOM, Paths.BOTTOM_TOP]:
         return True
@@ -45,3 +39,12 @@ def get_partner_path(path):
         return Paths.LEFT_RIGHT
     
     return None
+    
+
+
+# Tunable Parameters
+MAX_VELOCITY = 10
+ACCELERATION = 5
+COLLISION_DISTANCE = 50
+WAIT_TIME = 10
+DISTANCE_BETWEEN_CARS = 20
