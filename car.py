@@ -120,10 +120,6 @@ class Car:
                             car.queue.join(self)
                             car.queue.join(self)
                             
-                            if self.id == 13:
-                                print("hi")
-                                print(car.id)
-                                print(car.queue.motion_path_queue)
             else:
                 car.queue.join(self)
                 self.row = (is_partner_path(car.queue.host_car.path, self.path))
@@ -195,8 +191,6 @@ class Car:
             if self.row == None:
                 self.vx, self.vy = self.move_in_direction()
             elif self.row is False: # Add other paths
-                if (i % 144 == 0):
-                    print(self.id)
                 if self.path == Paths.BOTTOM_TOP:
                     if self.ay == 0:
                         deltaY = ((SCREEN_HEIGHT / 2) + 50) - self.y_pos
@@ -335,7 +329,6 @@ class Car:
                         cars.remove(self)
                         if not cars:
                             del self.queue.motion_path_queue[path]
-        print(f"Car {self.id} removed from simulation.")
     
     def draw(self, screen):
         pygame.draw.rect(screen, (255, 0, 0), (self.x_pos, self.y_pos, 10, 10))

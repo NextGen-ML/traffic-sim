@@ -19,6 +19,22 @@ def return_car(path):
     
     return None
 
+collisions = {}
+
+def add_collision(car1, car2):
+    if (car1.id, car2.id) not in collisions:
+        collisions[(car1.id, car2.id)] = True
+        
+
+def count_collisions():
+    global collisions
+    total = 0
+    for cars, col in list(collisions.items()):
+        if col:
+            total +=1
+    
+    return total
+
 def can_create(car_list, path):
     can = True
     if car_list != []:
@@ -45,17 +61,23 @@ def run_simulation():
     pygame.display.set_caption('Car Simulation')
     clock = pygame.time.Clock()
     running = True
+    start_time = pygame.time.get_ticks()
     
     cars = []
 
     i = 0
     while running:
-        if (i % (144*2) == 30 and len(cars) < 4):
+        
+        current_time = pygame.time.get_ticks()
+        if (current_time - start_time) > 30000:  # Stop after 30000 milliseconds
+            running = False
+
+        if (i % (144*2) == 30):
             if can_create(cars, Paths.TOP_BOTTOM):
                 cars.append(return_car(Paths.TOP_BOTTOM))
             if can_create(cars, Paths.BOTTOM_TOP):
                 cars.append(return_car(Paths.BOTTOM_TOP))
-        if (i % (144*2) == 0 and len(cars) < 4):
+        if (i % (144*2) == 0):
             if can_create(cars, Paths.LEFT_RIGHT):
                 cars.append(return_car(Paths.LEFT_RIGHT))
         if (i % (144*2) == 0):
@@ -79,6 +101,7 @@ def run_simulation():
         pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height), width=5)
 
         # Update cars
+        prev_car = None
         for car in cars[:]:
             if car.at_border():
                 car.remove_from_simulation()
@@ -86,6 +109,11 @@ def run_simulation():
             else:
                 car.draw(screen)
                 car.update(cars, i)
+            if prev_car is not None:
+                if is_close_to(car.x_pos, car.y_pos, prev_car.x_pos, prev_car.y_pos, 10):
+                    add_collision(car, prev_car)
+            
+            prev_car = car
 
         pygame.display.flip()
         clock.tick(144)
@@ -95,3 +123,5 @@ def run_simulation():
 
 if __name__ == "__main__":
     run_simulation()
+    print(f"Collisions: {count_collisions()}")
+    

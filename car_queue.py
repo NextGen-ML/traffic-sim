@@ -37,8 +37,8 @@ class CarQueue:
                 if len(self.motion_path_queue[path]) == 0:
                     del self.motion_path_queue[path]
 
-            if i % 144 == 0:
-                print(f"{self.host_car}")
+            # if i % 144 == 0:
+            #     print(f"{self.host_car}")
                 
             self.check_host_car()
 
@@ -49,7 +49,6 @@ class CarQueue:
     def run_queue_management(self):
         while self.active:
             time.sleep(WAIT_TIME)  # Sleep for 10 seconds or another suitable interval
-            print("hi")
             self.reorder_queue()
 
     def reorder_queue(self):
