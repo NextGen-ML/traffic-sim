@@ -2,6 +2,7 @@ import pygame
 from car import Car
 from config import *
 from random import randint
+import sys
 
 def is_close_to(x1, y1, x2, y2, tolerance):
     dist = abs((((x2-x1)**2) + ((y2-y1)**2))**0.5)
@@ -124,4 +125,4 @@ def run_simulation():
 if __name__ == "__main__":
     run_simulation()
     print(f"Collisions: {count_collisions()}")
-    
+    sys.exit()
