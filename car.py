@@ -94,7 +94,6 @@ class Car:
                     if self.will_collide(car):
                         print("COLLISION")
                         if self.distance_to_intersection() < car.distance_to_intersection():
-                            print("hello world")
                             if self.queue is None:
                                 self.queue = CarQueue(self)
                             self.queue.join(car)
