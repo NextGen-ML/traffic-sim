@@ -29,10 +29,10 @@ def add_collision(car1, car2):
 
 def count_collisions():
     global collisions
-    total = 0
+    total = 0  # Initialize total to 0
     for cars, col in list(collisions.items()):
         if col:
-            total +=1
+            total += 1
     
     return total
 
@@ -100,6 +100,10 @@ def run_simulation():
         rect_x = (SCREEN_WIDTH / 2) - (rect_width / 2)
         rect_y = (SCREEN_HEIGHT / 2) - (rect_height / 2)
         pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height), width=5)
+
+        font = pygame.font.Font(None, 28)  # Define the font
+        collisions_text = font.render(f"Collisions: {count_collisions()}", True, (0, 0, 0))
+        screen.blit(collisions_text, (10, 10))  # Position the text at the top-left corner
 
         # Update cars
         prev_car = None
