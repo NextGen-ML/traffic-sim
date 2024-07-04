@@ -24,6 +24,7 @@ collisions = {}
 
 def add_collision(car1, car2):
     if (car1.id, car2.id) not in collisions:
+        print("💥COLLISION")
         collisions[(car1.id, car2.id)] = True
         
 
@@ -106,7 +107,6 @@ def run_simulation():
         screen.blit(collisions_text, (10, 10))  # Position the text at the top-left corner
 
         # Update cars
-        prev_car = None
         for car in cars[:]:
             if car.at_border():
                 car.remove_from_simulation()
@@ -114,11 +114,12 @@ def run_simulation():
             else:
                 car.draw(screen)
                 car.update(cars, i)
-            if prev_car is not None:
-                if is_close_to(car.x_pos, car.y_pos, prev_car.x_pos, prev_car.y_pos, 10):
-                    add_collision(car, prev_car)
-            
-            prev_car = car
+
+        # Check for collisions
+        for j, car1 in enumerate(cars):
+            for car2 in cars[j+1:]:
+                if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 10):
+                    add_collision(car1, car2)
 
         pygame.display.flip()
         clock.tick(144)
