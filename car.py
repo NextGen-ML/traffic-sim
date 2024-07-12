@@ -8,10 +8,10 @@ class Car:
         self.y_pos = SCREEN_HEIGHT / 2
 
         if starting_pos == StartingPos.BOTTOM:
-            self.y_pos = SCREEN_HEIGHT - RENDER_BORDER
+            self.y_pos = (SCREEN_HEIGHT - RENDER_BORDER) - 3
             self.x_pos+=8
         elif starting_pos == StartingPos.TOP:
-            self.y_pos = RENDER_BORDER
+            self.y_pos = RENDER_BORDER + 3
             self.x_pos-=8
         elif starting_pos == StartingPos.LEFT:
             self.x_pos = RENDER_BORDER
@@ -79,54 +79,55 @@ class Car:
         return ((self.x_pos - other.x_pos) ** 2 + (self.y_pos - other.y_pos) ** 2) ** 0.5
     
     def calculate_row(self, i):
-        car: Car
-
-
-        car = self.get_car_ahead(self.nearby_cars) if self.get_car_ahead(self.nearby_cars) is not None else self.nearby_cars[slice(1)][0]
-
-        if car is not None:
-            if car.queue is None:
-                
-                if is_partner_path(self.path, car.path): # check for equiv. paths as well
-                    if car.row == None or car.row == True:
-                        self.row == True
-                else:
-                    if self.will_collide(car):
-                        print("COLLISION")
-                        if self.distance_to_intersection() < car.distance_to_intersection():
-                            print("hello world")
-                            if self.queue is None:
-                                self.queue = CarQueue(self)
-                            self.queue.join(car)
-                            self.queue.join(self)
-                            self.row = True
-                        elif self.distance_to_intersection() == car.distance_to_intersection():
-                            print("mismatch")
-                            
-                            if self.path == Paths.BOTTOM_TOP or self.path == Paths.TOP_BOTTOM:
+        # Ensuring 'cars' is always a list
+        car_ahead = self.get_car_ahead(self.nearby_cars)
+        if car_ahead is not None:
+            cars = [car_ahead]  # Make it a list even if it's one car
+        else:
+            cars = self.nearby_cars[:2]  # Get up to two cars from nearby_cars
+        
+        if cars:
+            for car in cars:
+                if car.queue is None:
+                    if is_partner_path(self.path, car.path):  # Check for equivalent paths as well
+                        if car.row is None or car.row:
+                            self.row = True  # Correct assignment from '==' to '='
+                    else:
+                        if self.will_collide(car):
+                            print("COLLISION")
+                            if self.distance_to_intersection() < car.distance_to_intersection():
+                                print("hello world")
                                 if self.queue is None:
                                     self.queue = CarQueue(self)
                                 self.queue.join(car)
+                                self.queue.join(self)
                                 self.row = True
+                            elif self.distance_to_intersection() == car.distance_to_intersection():
+                                print("mismatch")
+                                
+                                if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM]:
+                                    if self.queue is None:
+                                        self.queue = CarQueue(self)
+                                    self.queue.join(car)
+                                    self.row = True
+                                else:
+                                    if car.queue is None:
+                                        car.queue = CarQueue(car)
+                                    car.queue.join(self)
                             else:
                                 if car.queue is None:
                                     car.queue = CarQueue(car)
                                 car.queue.join(self)
-
-                        else:
-                            if car.queue is None:
-                                car.queue = CarQueue(car)
-                                
-                            car.queue.join(self)
-                            car.queue.join(self)
-                            
-            else:
-                car.queue.join(self)
-                self.row = (is_partner_path(car.queue.host_car.path, self.path))
-                
+                                car.queue.join(self)
+                else:
+                    car.queue.join(self)
+                    self.row = is_partner_path(car.queue.host_car.path, self.path)
+                    
         if self.queue:
-            if ( i% 3 == 0):
+            if i % 3 == 0:
                 self.queue.update_queue(i)
+            if i % 100 == 0:
+                print(self.queue.motion_path_queue)
     
     
     def get_car_ahead(self, all_cars):
@@ -149,27 +150,31 @@ class Car:
     
     
     def adjust_speed_to_maintain_gap(self, car_ahead):
-        desired_gap = DISTANCE_BETWEEN_CARS
-        actual_gap = self.calculate_distance_ahead(car_ahead) - DISTANCE_BETWEEN_CARS
         
-        
+        desired_velocity = self.vel  
+        comfortable_braking_acceleration = 1.5  
+        minimum_spacing = DISTANCE_BETWEEN_CARS 
+        time_headway = 1.5  
+
+        velocity = self.vy if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM] else self.vx
+        delta_velocity = velocity - (car_ahead.vy if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM] else car_ahead.vx)
+        gap = self.calculate_distance_ahead(car_ahead)
+
+        s_star = minimum_spacing + max(0, velocity * time_headway + (velocity * delta_velocity) / (2 * (comfortable_braking_acceleration**0.5)))
+        acceleration = comfortable_braking_acceleration * (1 - (velocity / desired_velocity)**4 - (s_star / gap)**2)
+
         if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM]:
-            if actual_gap < desired_gap:
-                self.ay = -1 * ACCELERATION if self.vy != 0 else 0
-            elif actual_gap > desired_gap + 5: 
-                self.ay = ACCELERATION if abs(self.vy) < MAX_VELOCITY else 0
-            else:
-                self.ax = 0
-                self.ay = 0
-                
-        if self.path in [Paths.LEFT_RIGHT, Paths.RIGHT_LEFT]:
-            if actual_gap < desired_gap:
-                self.ax = -1 * ACCELERATION if self.vx != 0 else 0
-            elif actual_gap > desired_gap + 5: 
-                self.ax = ACCELERATION if abs(self.vx) < MAX_VELOCITY else 0
-            else:
-                self.ax = 0
-                self.ay = 0
+            self.ay = acceleration
+            self.ax = 0  
+        elif self.path in [Paths.LEFT_RIGHT, Paths.RIGHT_LEFT]:
+            self.ax = acceleration
+            self.ay = 0  
+
+        if abs(self.ay) > ACCELERATION:
+            self.ay = ACCELERATION if self.ay > 0 else -ACCELERATION
+        if abs(self.ax) > ACCELERATION:
+            self.ax = ACCELERATION if self.ax > 0 else -ACCELERATION
+
 
                     
 

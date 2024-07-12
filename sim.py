@@ -63,27 +63,27 @@ def run_simulation():
     clock = pygame.time.Clock()
     running = True
     start_time = pygame.time.get_ticks()
-    
+
     cars = []
+    bottom_top_interval = 75  # Interval in frames for generating BOTTOM_TOP cars
+    left_right_interval = 75  # Interval in frames for generating LEFT_RIGHT cars
 
     i = 0
     while running:
-        
+
         current_time = pygame.time.get_ticks()
         if (current_time - start_time) > 30000:  # Stop after 30000 milliseconds
             running = False
 
-        if (i % (144*2) == 30):
-            if can_create(cars, Paths.TOP_BOTTOM):
-                cars.append(return_car(Paths.TOP_BOTTOM))
+        # Generate BOTTOM_TOP cars at regular intervals
+        if i % bottom_top_interval == 0:
             if can_create(cars, Paths.BOTTOM_TOP):
                 cars.append(return_car(Paths.BOTTOM_TOP))
-        if (i % (144*2) == 0):
+
+        # Generate LEFT_RIGHT cars at regular intervals
+        if i % left_right_interval == 0:
             if can_create(cars, Paths.LEFT_RIGHT):
                 cars.append(return_car(Paths.LEFT_RIGHT))
-        if (i % (144*2) == 0):
-            if can_create(cars, Paths.RIGHT_LEFT):
-                cars.append(return_car(Paths.RIGHT_LEFT))
 
         # Event handling
         for event in pygame.event.get():
@@ -110,10 +110,9 @@ def run_simulation():
             else:
                 car.draw(screen)
                 car.update(cars, i)
-            if prev_car is not None:
-                if is_close_to(car.x_pos, car.y_pos, prev_car.x_pos, prev_car.y_pos, 10):
-                    add_collision(car, prev_car)
-            
+            if prev_car is not None and is_close_to(car.x_pos, car.y_pos, prev_car.x_pos, prev_car.y_pos, 10):
+                add_collision(car, prev_car)
+
             prev_car = car
 
         pygame.display.flip()
