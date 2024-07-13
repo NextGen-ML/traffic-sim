@@ -126,8 +126,8 @@ class Car:
         if self.queue:
             if i % 3 == 0:
                 self.queue.update_queue(i)
-            if i % 100 == 0:
-                print(self.queue.motion_path_queue)
+            # if i % 100 == 0:
+            #     print(self.queue.motion_path_queue)
     
     
     def get_car_ahead(self, all_cars):
@@ -196,6 +196,7 @@ class Car:
             if self.row == None:
                 self.vx, self.vy = self.move_in_direction()
             elif self.row is False: # Add other paths
+                
                 if self.path == Paths.BOTTOM_TOP:
                     if self.ay == 0:
                         deltaY = ((SCREEN_HEIGHT / 2) + 50) - self.y_pos

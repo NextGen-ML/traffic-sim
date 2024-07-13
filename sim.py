@@ -114,14 +114,17 @@ def run_simulation():
             else:
                 car.draw(screen)
                 car.update(cars, i)
+                
+        prev_car = None
 
         # Check for collisions
         for j, car1 in enumerate(cars):
             for car2 in cars[j+1:]:
-                if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 10):
+                if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 2):
                     add_collision(car1, car2)
-            if prev_car is not None and is_close_to(car.x_pos, car.y_pos, prev_car.x_pos, prev_car.y_pos, 10):
-                add_collision(car, prev_car)
+            # if prev_car is not None and is_close_to(car1.x_pos, car1.y_pos, prev_car.x_pos, prev_car.y_pos, .1):
+            #     add_collision(car1, prev_car)
+            #     print("help")
 
             prev_car = car
 
