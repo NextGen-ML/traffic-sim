@@ -24,15 +24,16 @@ collisions = {}
 
 def add_collision(car1, car2):
     if (car1.id, car2.id) not in collisions:
+        print("💥COLLISION")
         collisions[(car1.id, car2.id)] = True
         
 
 def count_collisions():
     global collisions
-    total = 0
+    total = 0  # Initialize total to 0
     for cars, col in list(collisions.items()):
         if col:
-            total +=1
+            total += 1
     
     return total
 
@@ -101,8 +102,11 @@ def run_simulation():
         rect_y = (SCREEN_HEIGHT / 2) - (rect_height / 2)
         pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height), width=5)
 
+        font = pygame.font.Font(None, 28)  # Define the font
+        collisions_text = font.render(f"Collisions: {count_collisions()}", True, (0, 0, 0))
+        screen.blit(collisions_text, (10, 10))  # Position the text at the top-left corner
+
         # Update cars
-        prev_car = None
         for car in cars[:]:
             if car.at_border():
                 car.remove_from_simulation()
@@ -110,6 +114,12 @@ def run_simulation():
             else:
                 car.draw(screen)
                 car.update(cars, i)
+
+        # Check for collisions
+        for j, car1 in enumerate(cars):
+            for car2 in cars[j+1:]:
+                if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 10):
+                    add_collision(car1, car2)
             if prev_car is not None and is_close_to(car.x_pos, car.y_pos, prev_car.x_pos, prev_car.y_pos, 10):
                 add_collision(car, prev_car)
 
