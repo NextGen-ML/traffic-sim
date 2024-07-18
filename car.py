@@ -126,8 +126,7 @@ class Car:
         if self.queue:
             if i % 3 == 0:
                 self.queue.update_queue(i)
-            # if i % 100 == 0:
-            #     print(self.queue.motion_path_queue)
+
     
     
     def get_car_ahead(self, all_cars):
