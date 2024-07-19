@@ -168,7 +168,7 @@ class Car:
         if abs(self.ax) > self.config.ACCELERATION:
             self.ax = self.config.ACCELERATION if self.ax > 0 else -self.config.ACCELERATION
 
-    def update(self, cars, i):
+    def update(self, cars, i, speed_factor=1):
         self.get_cars(cars)
         self.update_parameters()
         
@@ -181,7 +181,7 @@ class Car:
             self.adjust_speed_to_maintain_gap(car_ahead)
 
         if not self.at_border():
-            dt = 1 / FRAME_RATE
+            dt = (1 / FRAME_RATE) * speed_factor  # Adjust dt with the speed factor
             if self.row is None:
                 self.vx, self.vy = self.move_in_direction()
             elif self.row is False:

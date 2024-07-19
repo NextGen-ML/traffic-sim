@@ -65,23 +65,43 @@ def run_simulation():
 
     config = Config()  # Create the config instance
     cars = []
-    bottom_top_interval = 75  # Interval in frames for generating BOTTOM_TOP cars
-    left_right_interval = 75  # Interval in frames for generating LEFT_RIGHT cars
+    bottom_top_interval = 40  # Base interval in frames for generating BOTTOM_TOP cars
+    left_right_interval = 40  # Base interval in frames for generating LEFT_RIGHT cars
+
+    # Generate random initial intervals within +- 15 of the base interval
+    bottom_top_next_interval = bottom_top_interval + randint(-10, 10)
+    left_right_next_interval = left_right_interval + randint(-10, 10)
+
+    collision_records = []  # List to record the number of collisions at each interval
+    interval_start_time = start_time
+    start_collisions = count_collisions()  # Record collisions at the start of the interval
 
     i = 0
     while running:
 
         current_time = pygame.time.get_ticks()
-        if (current_time - start_time) > 30000:  
+        elapsed_time = current_time - start_time
+        interval_elapsed_time = current_time - interval_start_time
+
+        if elapsed_time > 60001:  
             running = False
 
+        if interval_elapsed_time >= 20000: 
+            end_collisions = count_collisions()
+            interval_collisions = end_collisions - start_collisions  
+            collision_records.append(interval_collisions) 
+            start_collisions = end_collisions  
+            interval_start_time = current_time  
+            bottom_top_next_interval = bottom_top_interval + randint(-10, 10)  
+            left_right_next_interval = left_right_interval + randint(-10, 10) 
+
         # Generate BOTTOM_TOP cars at regular intervals
-        if i % bottom_top_interval == 0:
+        if i % bottom_top_next_interval == 0:
             if can_create(cars, Paths.BOTTOM_TOP):
                 cars.append(return_car(Paths.BOTTOM_TOP, config))
 
         # Generate LEFT_RIGHT cars at regular intervals
-        if i % left_right_interval == 0:
+        if i % left_right_next_interval == 0:
             if can_create(cars, Paths.LEFT_RIGHT):
                 cars.append(return_car(Paths.LEFT_RIGHT, config))
 
@@ -117,7 +137,6 @@ def run_simulation():
             param_surface = font.render(text, True, (0, 0, 0))
             screen.blit(param_surface, (10, 10 + idx * 20))  
 
-        # Display the number of collisions on the right side with a bigger font
         collisions_text = collision_font.render(f"{count_collisions()}", True, (255, 0, 0))
         screen.blit(collisions_text, (475, 10)) 
 
@@ -128,14 +147,14 @@ def run_simulation():
                 cars.remove(car)
             else:
                 car.draw(screen)
-                car.update(cars, i)
+                car.update(cars, i, speed_factor=SPEED_FACTOR)
                 
         prev_car = None
 
         # Check for collisions
         for j, car1 in enumerate(cars):
             for car2 in cars[j+1:]:
-                if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 2):
+                if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 15):
                     add_collision(car1, car2)
 
             prev_car = car
@@ -146,7 +165,10 @@ def run_simulation():
 
     pygame.quit()
 
+    for idx, collisions in enumerate(collision_records):
+        print(f"Collisions in interval {idx + 1}: {collisions}")
+
 if __name__ == "__main__":
     run_simulation()
-    print(f"Collisions: {count_collisions()}")
+    print(f"Total Collisions: {count_collisions()}")
     sys.exit()
