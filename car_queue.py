@@ -3,8 +3,9 @@ import time
 from config import *
 
 class CarQueue:
-    def __init__(self, host_car):
+    def __init__(self, host_car, config):
         self.host_car = host_car
+        self.config = config  # Store the config instance
         self.motion_path_queue = {host_car.path: [host_car]}
         self.lock = threading.Lock()
         self.active = True
@@ -17,7 +18,6 @@ class CarQueue:
             if not car_exists:
                 if car.path in self.motion_path_queue:
                     self.motion_path_queue[car.path].append(car)
-                    
                 elif get_partner_path(car.path) in self.motion_path_queue:
                     self.motion_path_queue[get_partner_path(car.path)].append(car)
                 else:
@@ -37,18 +37,16 @@ class CarQueue:
                 if len(self.motion_path_queue[path]) == 0:
                     del self.motion_path_queue[path]
 
-            # if i % 144 == 0:
-            #     print(f"{self.host_car}")
-                
             self.check_host_car()
 
     def check_host_car(self):
-        top_path = next(iter(self.motion_path_queue))
-        self.host_car = self.motion_path_queue[top_path][0]
-    
+        if self.motion_path_queue:
+            top_path = next(iter(self.motion_path_queue))
+            self.host_car = self.motion_path_queue[top_path][0]
+
     def run_queue_management(self):
         while self.active:
-            time.sleep(WAIT_TIME)  # Sleep for 10 seconds or another suitable interval
+            time.sleep(self.config.WAIT_TIME) 
             self.reorder_queue()
 
     def reorder_queue(self):
@@ -67,13 +65,9 @@ class CarQueue:
             for path, cars in self.motion_path_queue.items():
                 for car in cars:
                     car.row = False
-            
-
 
     def shutdown(self):
         with self.lock:
             self.active = False
             if self.thread.is_alive():
                 self.thread.join()
-
-

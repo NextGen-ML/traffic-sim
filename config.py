@@ -3,8 +3,8 @@ import pygame
 import time
 
 # Constants
-SCREEN_WIDTH = 500
-SCREEN_HEIGHT = 500
+SCREEN_WIDTH = 400
+SCREEN_HEIGHT = 400
 RENDER_BORDER = 10
 FRAME_RATE = 60
 

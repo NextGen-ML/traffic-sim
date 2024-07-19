@@ -99,23 +99,23 @@ class Car:
                         if self.will_collide(car):
                             if self.distance_to_intersection() < car.distance_to_intersection():
                                 if self.queue is None:
-                                    self.queue = CarQueue(self)
+                                    self.queue = CarQueue(self, self.config) 
                                 self.queue.join(car)
                                 self.queue.join(self)
                                 self.row = True
                             elif self.distance_to_intersection() == car.distance_to_intersection():
                                 if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM]:
                                     if self.queue is None:
-                                        self.queue = CarQueue(self)
+                                        self.queue = CarQueue(self, self.config) 
                                     self.queue.join(car)
                                     self.row = True
                                 else:
                                     if car.queue is None:
-                                        car.queue = CarQueue(car)
+                                        car.queue = CarQueue(car, self.config)
                                     car.queue.join(self)
                             else:
                                 if car.queue is None:
-                                    car.queue = CarQueue(car)
+                                    car.queue = CarQueue(car, self.config) 
                                 car.queue.join(self)
                                 car.queue.join(self)
                 else:
@@ -126,8 +126,6 @@ class Car:
             if i % 3 == 0:
                 self.queue.update_queue(i)
 
-    
-    
     def get_car_ahead(self, all_cars):
         min_distance = float('inf')
         car_ahead = None
@@ -146,9 +144,7 @@ class Car:
             distance = other_car.x_pos - self.x_pos
         return distance
     
-    
     def adjust_speed_to_maintain_gap(self, car_ahead):
-        
         desired_velocity = self.vel  
         comfortable_braking_acceleration = 1.5  
         minimum_spacing = self.config.DISTANCE_BETWEEN_CARS 
@@ -175,7 +171,6 @@ class Car:
 
     def update(self, cars, i):
         self.get_cars(cars)
-
         self.update_parameters()
         
         if len(self.nearby_cars) > 0:
@@ -186,7 +181,6 @@ class Car:
         if car_ahead:
             self.adjust_speed_to_maintain_gap(car_ahead)
 
-        
         if not self.at_border():
             dt = 1 / FRAME_RATE
             if self.row is None:
