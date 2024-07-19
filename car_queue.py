@@ -46,7 +46,7 @@ class CarQueue:
 
     def run_queue_management(self):
         while self.active:
-            time.sleep(self.config.WAIT_TIME) 
+            time.sleep(self.config.WAIT_TIME)  
             self.reorder_queue()
 
     def reorder_queue(self):

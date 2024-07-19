@@ -72,7 +72,7 @@ def run_simulation():
     while running:
 
         current_time = pygame.time.get_ticks()
-        if (current_time - start_time) > 30000:  # Stop after 30000 milliseconds
+        if (current_time - start_time) > 30000:  
             running = False
 
         # Generate BOTTOM_TOP cars at regular intervals
@@ -101,9 +101,25 @@ def run_simulation():
         rect_y = (SCREEN_HEIGHT / 2) - (rect_height / 2)
         pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height), width=5)
 
-        font = pygame.font.Font(None, 28)  # Define the font
-        collisions_text = font.render(f"Collisions: {count_collisions()}", True, (0, 0, 0))
-        screen.blit(collisions_text, (10, 10))  # Position the text at the top-left corner
+        font = pygame.font.Font(None, 16)  
+        collision_font = pygame.font.Font(None, 32) 
+
+        # Display the configuration parameters on the left side
+        params_text = [
+            f"MAX_VELOCITY: {config.MAX_VELOCITY}",
+            f"ACCELERATION: {config.ACCELERATION}",
+            f"COLLISION_DISTANCE: {config.COLLISION_DISTANCE}",
+            f"WAIT_TIME: {config.WAIT_TIME}",
+            f"DISTANCE_BETWEEN_CARS: {config.DISTANCE_BETWEEN_CARS}"
+        ]
+
+        for idx, text in enumerate(params_text):
+            param_surface = font.render(text, True, (0, 0, 0))
+            screen.blit(param_surface, (10, 10 + idx * 20))  
+
+        # Display the number of collisions on the right side with a bigger font
+        collisions_text = collision_font.render(f"{count_collisions()}", True, (255, 0, 0))
+        screen.blit(collisions_text, (475, 10)) 
 
         # Update cars
         for car in cars[:]:

@@ -77,7 +77,6 @@ class Car:
 
         return False
 
-        
     def distance_to(self, other):
         other: Car
         return ((self.x_pos - other.x_pos) ** 2 + (self.y_pos - other.y_pos) ** 2) ** 0.5
@@ -99,14 +98,14 @@ class Car:
                         if self.will_collide(car):
                             if self.distance_to_intersection() < car.distance_to_intersection():
                                 if self.queue is None:
-                                    self.queue = CarQueue(self, self.config) 
+                                    self.queue = CarQueue(self, self.config)
                                 self.queue.join(car)
                                 self.queue.join(self)
                                 self.row = True
                             elif self.distance_to_intersection() == car.distance_to_intersection():
                                 if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM]:
                                     if self.queue is None:
-                                        self.queue = CarQueue(self, self.config) 
+                                        self.queue = CarQueue(self, self.config)
                                     self.queue.join(car)
                                     self.row = True
                                 else:
@@ -115,7 +114,7 @@ class Car:
                                     car.queue.join(self)
                             else:
                                 if car.queue is None:
-                                    car.queue = CarQueue(car, self.config) 
+                                    car.queue = CarQueue(car, self.config)
                                 car.queue.join(self)
                                 car.queue.join(self)
                 else:
@@ -320,4 +319,4 @@ class Car:
                             del self.queue.motion_path_queue[path]
     
     def draw(self, screen):
-        pygame.draw.rect(screen, (255, 0, 0), (self.x_pos, self.y_pos, 10, 10))
+        pygame.draw.rect(screen, (0, 0, 255), (self.x_pos, self.y_pos, 10, 10))
