@@ -8,15 +8,15 @@ def is_close_to(x1, y1, x2, y2, tolerance):
     dist = abs((((x2-x1)**2) + ((y2-y1)**2))**0.5)
     return tolerance > dist
 
-def return_car(path):
+def return_car(path, config):
     if path == Paths.TOP_BOTTOM:
-        return Car(StartingPos.TOP, Paths.TOP_BOTTOM, randint(0, 100))
+        return Car(StartingPos.TOP, Paths.TOP_BOTTOM, randint(0, 100), config)
     elif path == Paths.BOTTOM_TOP:
-        return Car(StartingPos.BOTTOM, Paths.BOTTOM_TOP, randint(0,100))
+        return Car(StartingPos.BOTTOM, Paths.BOTTOM_TOP, randint(0,100), config)
     elif path == Paths.LEFT_RIGHT:
-        return Car(StartingPos.LEFT, Paths.LEFT_RIGHT, randint(0,100))
+        return Car(StartingPos.LEFT, Paths.LEFT_RIGHT, randint(0,100), config)
     elif path == Paths.RIGHT_LEFT:
-        return Car(StartingPos.RIGHT, Paths.RIGHT_LEFT, randint(0, 100))
+        return Car(StartingPos.RIGHT, Paths.RIGHT_LEFT, randint(0, 100), config)
     
     return None
 
@@ -26,7 +26,6 @@ def add_collision(car1, car2):
     if (car1.id, car2.id) not in collisions:
         print("💥COLLISION")
         collisions[(car1.id, car2.id)] = True
-        
 
 def count_collisions():
     global collisions
@@ -55,7 +54,6 @@ def can_create(car_list, path):
                     if is_close_to(car.x_pos, car.y_pos, SCREEN_WIDTH-RENDER_BORDER, (SCREEN_HEIGHT / 2)- 8, 2):
                         can = False
     return can
-                
 
 def run_simulation():
     pygame.init()
@@ -65,6 +63,7 @@ def run_simulation():
     running = True
     start_time = pygame.time.get_ticks()
 
+    config = Config()  # Create the config instance
     cars = []
     bottom_top_interval = 75  # Interval in frames for generating BOTTOM_TOP cars
     left_right_interval = 75  # Interval in frames for generating LEFT_RIGHT cars
@@ -79,12 +78,12 @@ def run_simulation():
         # Generate BOTTOM_TOP cars at regular intervals
         if i % bottom_top_interval == 0:
             if can_create(cars, Paths.BOTTOM_TOP):
-                cars.append(return_car(Paths.BOTTOM_TOP))
+                cars.append(return_car(Paths.BOTTOM_TOP, config))
 
         # Generate LEFT_RIGHT cars at regular intervals
         if i % left_right_interval == 0:
             if can_create(cars, Paths.LEFT_RIGHT):
-                cars.append(return_car(Paths.LEFT_RIGHT))
+                cars.append(return_car(Paths.LEFT_RIGHT, config))
 
         # Event handling
         for event in pygame.event.get():
@@ -122,9 +121,6 @@ def run_simulation():
             for car2 in cars[j+1:]:
                 if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 2):
                     add_collision(car1, car2)
-            # if prev_car is not None and is_close_to(car1.x_pos, car1.y_pos, prev_car.x_pos, prev_car.y_pos, .1):
-            #     add_collision(car1, prev_car)
-            #     print("help")
 
             prev_car = car
 

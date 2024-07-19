@@ -2,17 +2,18 @@ from config import *
 from car_queue import CarQueue
 
 class Car:
-    def __init__(self, starting_pos, path, id):
+    def __init__(self, starting_pos, path, id, config):
+        self.config = config
         self.starting_pos = starting_pos
         self.x_pos = SCREEN_WIDTH / 2 
         self.y_pos = SCREEN_HEIGHT / 2
 
         if starting_pos == StartingPos.BOTTOM:
             self.y_pos = (SCREEN_HEIGHT - RENDER_BORDER) - 3
-            self.x_pos+=8
+            self.x_pos += 8
         elif starting_pos == StartingPos.TOP:
             self.y_pos = RENDER_BORDER + 3
-            self.x_pos-=8
+            self.x_pos -= 8
         elif starting_pos == StartingPos.LEFT:
             self.x_pos = RENDER_BORDER
             self.y_pos += 8
@@ -22,14 +23,18 @@ class Car:
         
         self.id = id
         self.path = path
-        self.vel = MAX_VELOCITY
+        self.vel = self.config.MAX_VELOCITY
         self.accel = 0
         self.row = None 
         self.starting = False
-        self.queue:CarQueue = None
+        self.queue = None
         
-        self.vx, self.vy, self.ax, self.ay = 0, 0, 0, 0 # bad syntax but too lazy to fix
+        self.vx, self.vy, self.ax, self.ay = 0, 0, 0, 0
         self.nearby_cars = []
+
+    def update_parameters(self):
+        self.vel = self.config.MAX_VELOCITY
+        self.accel = self.config.ACCELERATION
 
     def set_row(self, row):
         self.row = row
@@ -40,7 +45,6 @@ class Car:
     def get_row(self):
         return self.row
     
-    # Useless for now, could be useful later
     def output(self):
         return {"x_pos":self.x_pos, "y_pos":self.y_pos, "vx":self.vx, "vy":self.vy, "ax":self.ax, "ay":self.ay, "path":self.path, "queue":self.queue, "row":self.row}
     
@@ -68,7 +72,7 @@ class Car:
             
             distance = ((my_future_x - other_future_x) ** 2 + (my_future_y - other_future_y) ** 2) ** 0.5
             
-            if distance < COLLISION_DISTANCE:
+            if distance < self.config.COLLISION_DISTANCE:
                 return True
 
         return False
@@ -79,7 +83,6 @@ class Car:
         return ((self.x_pos - other.x_pos) ** 2 + (self.y_pos - other.y_pos) ** 2) ** 0.5
     
     def calculate_row(self, i):
-        # Ensuring 'cars' is always a list
         car_ahead = self.get_car_ahead(self.nearby_cars)
         if car_ahead is not None:
             cars = [car_ahead]  # Make it a list even if it's one car
@@ -91,20 +94,16 @@ class Car:
                 if car.queue is None:
                     if is_partner_path(self.path, car.path):  # Check for equivalent paths as well
                         if car.row is None or car.row:
-                            self.row = True  # Correct assignment from '==' to '='
+                            self.row = True
                     else:
                         if self.will_collide(car):
-                            # print("COLLISION")
                             if self.distance_to_intersection() < car.distance_to_intersection():
-                                print("hello world")
                                 if self.queue is None:
                                     self.queue = CarQueue(self)
                                 self.queue.join(car)
                                 self.queue.join(self)
                                 self.row = True
                             elif self.distance_to_intersection() == car.distance_to_intersection():
-                                print("mismatch")
-                                
                                 if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM]:
                                     if self.queue is None:
                                         self.queue = CarQueue(self)
@@ -152,7 +151,7 @@ class Car:
         
         desired_velocity = self.vel  
         comfortable_braking_acceleration = 1.5  
-        minimum_spacing = DISTANCE_BETWEEN_CARS 
+        minimum_spacing = self.config.DISTANCE_BETWEEN_CARS 
         time_headway = 1.5  
 
         velocity = self.vy if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM] else self.vx
@@ -169,17 +168,15 @@ class Car:
             self.ax = acceleration
             self.ay = 0  
 
-        if abs(self.ay) > ACCELERATION:
-            self.ay = ACCELERATION if self.ay > 0 else -ACCELERATION
-        if abs(self.ax) > ACCELERATION:
-            self.ax = ACCELERATION if self.ax > 0 else -ACCELERATION
-
-
-                    
+        if abs(self.ay) > self.config.ACCELERATION:
+            self.ay = self.config.ACCELERATION if self.ay > 0 else -self.config.ACCELERATION
+        if abs(self.ax) > self.config.ACCELERATION:
+            self.ax = self.config.ACCELERATION if self.ax > 0 else -self.config.ACCELERATION
 
     def update(self, cars, i):
         self.get_cars(cars)
 
+        self.update_parameters()
         
         if len(self.nearby_cars) > 0:
             self.calculate_row(i)
@@ -191,32 +188,31 @@ class Car:
 
         
         if not self.at_border():
-            dt = 1/FRAME_RATE
-            if self.row == None:
+            dt = 1 / FRAME_RATE
+            if self.row is None:
                 self.vx, self.vy = self.move_in_direction()
-            elif self.row is False: # Add other paths
-                
+            elif self.row is False:
                 if self.path == Paths.BOTTOM_TOP:
                     if self.ay == 0:
                         deltaY = ((SCREEN_HEIGHT / 2) + 50) - self.y_pos
-                        self.ay = (0-(self.vy**2))/(2*deltaY)
+                        self.ay = (0 - (self.vy ** 2)) / (2 * deltaY)
 
                 elif self.path == Paths.TOP_BOTTOM:
                     if self.ay == 0:
                         deltaY = ((SCREEN_HEIGHT / 2) - 50) - self.y_pos
-                        self.ay = (0-(self.vy**2))/(2*deltaY)
+                        self.ay = (0 - (self.vy ** 2)) / (2 * deltaY)
                 
                 elif self.path == Paths.LEFT_RIGHT:
                     if self.ax == 0:
                         deltaX = ((SCREEN_WIDTH / 2) - 50) - self.x_pos
-                        self.ax = (0-(self.vx**2))/(2*deltaX)
+                        self.ax = (0 - (self.vx ** 2)) / (2 * deltaX)
                                                 
                 elif self.path == Paths.RIGHT_LEFT:
                     if self.ax == 0:
                         deltaX = ((SCREEN_WIDTH / 2) + 50) - self.x_pos
-                        self.ax = (0-(self.vx**2))/(2*deltaX)
+                        self.ax = (0 - (self.vx ** 2)) / (2 * deltaX)
                         
-                if car_ahead is not None and self.calculate_distance_ahead(car_ahead) < DISTANCE_BETWEEN_CARS:
+                if car_ahead is not None and self.calculate_distance_ahead(car_ahead) < self.config.DISTANCE_BETWEEN_CARS:
                     self.vx = 0
                     self.vy = 0
                     
@@ -226,23 +222,21 @@ class Car:
                     
                 if not self.starting:
                     self.vx, self.vy = self.move_in_direction()
-                else: # Add other paths
-                    if self.path is Paths.BOTTOM_TOP:
-                        self.ay = -ACCELERATION
+                else:
+                    if self.path == Paths.BOTTOM_TOP:
+                        self.ay = -self.config.ACCELERATION
                         self.starting = True
-                    elif self.path is Paths.TOP_BOTTOM:
-                        self.ay = ACCELERATION
+                    elif self.path == Paths.TOP_BOTTOM:
+                        self.ay = self.config.ACCELERATION
                         self.starting = True
                         
-                    if self.path is Paths.LEFT_RIGHT:
-                        self.ax = ACCELERATION
+                    if self.path == Paths.LEFT_RIGHT:
+                        self.ax = self.config.ACCELERATION
                         self.starting = True
-                    elif self.path is Paths.RIGHT_LEFT:
-                        self.ax = -ACCELERATION
+                    elif self.path == Paths.RIGHT_LEFT:
+                        self.ax = -self.config.ACCELERATION
                         self.starting = True
 
-                        
-            
             if abs(self.vx) < 0.1 and not self.starting:
                 self.vx = 0
                 self.ax = 0
@@ -260,16 +254,15 @@ class Car:
             elif self.starting_pos == StartingPos.RIGHT:
                 self.vx = min(self.vx, 0)  # Prevent moving left
             
-            # clamp velocities
-            self.vx = max(min(self.vx, MAX_VELOCITY), -MAX_VELOCITY)
-            self.vy = max(min(self.vy, MAX_VELOCITY), -MAX_VELOCITY)
+            self.vx = max(min(self.vx, self.config.MAX_VELOCITY), -self.config.MAX_VELOCITY)
+            self.vy = max(min(self.vy, self.config.MAX_VELOCITY), -self.config.MAX_VELOCITY)
             
-            if (abs(self.vx) == MAX_VELOCITY or abs(self.vy) == MAX_VELOCITY) and self.starting:
+            if (abs(self.vx) == self.config.MAX_VELOCITY or abs(self.vy) == self.config.MAX_VELOCITY) and self.starting:
                 self.starting = False
 
             # Euler method for integration
-            self.vx += self.ax*dt
-            self.vy += self.ay*dt
+            self.vx += self.ax * dt
+            self.vy += self.ay * dt
             
             self.x_pos += (self.vx * dt)
             self.y_pos += (self.vy * dt)
@@ -302,9 +295,6 @@ class Car:
 
         return False
 
-
-            
-    # helper function to make stupid code easier
     def move_in_direction(self):
         if self.starting_pos == StartingPos.BOTTOM:
             return (0, -self.vel)
@@ -337,4 +327,3 @@ class Car:
     
     def draw(self, screen):
         pygame.draw.rect(screen, (255, 0, 0), (self.x_pos, self.y_pos, 10, 10))
-

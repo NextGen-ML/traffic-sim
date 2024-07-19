@@ -42,9 +42,32 @@ def get_partner_path(path):
     
 
 
-# Tunable Parameters
-MAX_VELOCITY = 100
-ACCELERATION = 50
-COLLISION_DISTANCE = 50
-WAIT_TIME = 10
-DISTANCE_BETWEEN_CARS = 20
+class Config:
+    def __init__(self):
+        self.MAX_VELOCITY = 100
+        self.ACCELERATION = 50
+        self.COLLISION_DISTANCE = 50
+        self.WAIT_TIME = 10
+        self.DISTANCE_BETWEEN_CARS = 20
+
+    # For changing the parameters using our reinforcement learning model
+    def update_parameters(self, max_velocity=None, acceleration=None, collision_distance=None, wait_time=None, distance_between_cars=None):
+        if max_velocity is not None:
+            self.MAX_VELOCITY = max_velocity
+        if acceleration is not None:
+            self.ACCELERATION = acceleration
+        if collision_distance is not None:
+            self.COLLISION_DISTANCE = collision_distance
+        if wait_time is not None:
+            self.WAIT_TIME = wait_time
+        if distance_between_cars is not None:
+            self.DISTANCE_BETWEEN_CARS = distance_between_cars
+
+    def get_parameters(self):
+        return {
+            'MAX_VELOCITY': self.MAX_VELOCITY,
+            'ACCELERATION': self.ACCELERATION,
+            'COLLISION_DISTANCE': self.COLLISION_DISTANCE,
+            'WAIT_TIME': self.WAIT_TIME,
+            'DISTANCE_BETWEEN_CARS': self.DISTANCE_BETWEEN_CARS
+        }
