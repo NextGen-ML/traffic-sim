@@ -94,7 +94,7 @@ class Car:
                             self.row = True  # Correct assignment from '==' to '='
                     else:
                         if self.will_collide(car):
-                            print("COLLISION")
+                            # print("COLLISION")
                             if self.distance_to_intersection() < car.distance_to_intersection():
                                 print("hello world")
                                 if self.queue is None:

@@ -15,4 +15,3 @@ four_way = Intersection(
     starting_positions=[StartingPos.BOTTOM, StartingPos.TOP, StartingPos.LEFT, StartingPos.RIGHT],
     size=(100, 100)
 )
-        
