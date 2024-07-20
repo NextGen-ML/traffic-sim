@@ -4,19 +4,23 @@ from config import *
 from random import randint
 import sys
 
+total_crossings = 0
+start_crossings = 0
+crossed_cars = set()
+
 def is_close_to(x1, y1, x2, y2, tolerance):
     dist = abs((((x2-x1)**2) + ((y2-y1)**2))**0.5)
     return tolerance > dist
 
 def return_car(path, config):
     if path == Paths.TOP_BOTTOM:
-        return Car(StartingPos.TOP, Paths.TOP_BOTTOM, randint(0, 100), config)
+        return Car(StartingPos.TOP, Paths.TOP_BOTTOM, randint(0, 100000), config)
     elif path == Paths.BOTTOM_TOP:
-        return Car(StartingPos.BOTTOM, Paths.BOTTOM_TOP, randint(0,100), config)
+        return Car(StartingPos.BOTTOM, Paths.BOTTOM_TOP, randint(0,100000), config)
     elif path == Paths.LEFT_RIGHT:
-        return Car(StartingPos.LEFT, Paths.LEFT_RIGHT, randint(0,100), config)
+        return Car(StartingPos.LEFT, Paths.LEFT_RIGHT, randint(0,100000), config)
     elif path == Paths.RIGHT_LEFT:
-        return Car(StartingPos.RIGHT, Paths.RIGHT_LEFT, randint(0, 100), config)
+        return Car(StartingPos.RIGHT, Paths.RIGHT_LEFT, randint(0, 100000), config)
     
     return None
 
@@ -35,6 +39,9 @@ def count_collisions():
             total += 1
     
     return total
+
+def count_crossed_intersections(cars):
+    return sum(1 for car in cars if car.crossed_intersection)
 
 def can_create(car_list, path):
     can = True
@@ -62,19 +69,22 @@ def run_simulation():
     clock = pygame.time.Clock()
     running = True
     start_time = pygame.time.get_ticks()
+    start_crossings = 0
 
     config = Config()  # Create the config instance
     cars = []
-    bottom_top_interval = 40  # Base interval in frames for generating BOTTOM_TOP cars
-    left_right_interval = 40  # Base interval in frames for generating LEFT_RIGHT cars
+    bottom_top_interval = 50  # Base interval in frames for generating BOTTOM_TOP cars
+    left_right_interval = 50  # Base interval in frames for generating LEFT_RIGHT cars
 
     # Generate random initial intervals within +- 15 of the base interval
     bottom_top_next_interval = bottom_top_interval + randint(-10, 10)
     left_right_next_interval = left_right_interval + randint(-10, 10)
 
     collision_records = []  # List to record the number of collisions at each interval
+    intersection_records = []  # List to record the number of crossings at each interval
     interval_start_time = start_time
     start_collisions = count_collisions()  # Record collisions at the start of the interval
+    total_crossings = 0  # Total number of cars crossing the intersection
 
     i = 0
     while running:
@@ -94,6 +104,27 @@ def run_simulation():
             interval_start_time = current_time  
             bottom_top_next_interval = bottom_top_interval + randint(-10, 10)  
             left_right_next_interval = left_right_interval + randint(-10, 10) 
+            interval_crossings = total_crossings - start_crossings
+            intersection_records.append(interval_crossings)
+            start_crossings = total_crossings
+
+            # Calculate and record the number of cars that crossed the intersection in this interval
+            # interval_crossings = count_crossed_intersections(cars) - total_crossings
+            # intersection_records.append(interval_crossings)
+            # total_crossings += interval_crossings
+            for car in cars[:]:
+                if car.at_border():
+                    if car.crossed_intersection and car.id not in crossed_cars:
+                        total_crossings += 1
+                        crossed_cars.add(car.id)
+                    car.remove_from_simulation()
+                    cars.remove(car)
+                else:
+                    car.draw(screen)
+                    car.update(cars, i, speed_factor=SPEED_FACTOR)
+                    if car.crossed_intersection and car.id not in crossed_cars:
+                        total_crossings += 1
+                        crossed_cars.add(car.id)
 
         # Generate BOTTOM_TOP cars at regular intervals
         if i % bottom_top_next_interval == 0:
@@ -137,17 +168,26 @@ def run_simulation():
             param_surface = font.render(text, True, (0, 0, 0))
             screen.blit(param_surface, (10, 10 + idx * 20))  
 
-        collisions_text = collision_font.render(f"{count_collisions()}", True, (255, 0, 0))
-        screen.blit(collisions_text, (475, 10)) 
+        collisions_text = collision_font.render(f"Collisions: {count_collisions()}", True, (255, 0, 0))
+        screen.blit(collisions_text, (350, 10)) 
+
+        crossings_text = collision_font.render(f"Crossings: {total_crossings}", True, (0, 0, 255))
+        screen.blit(crossings_text, (350, 50))
 
         # Update cars
         for car in cars[:]:
             if car.at_border():
+                if car.crossed_intersection and car.id not in crossed_cars:
+                    total_crossings += 1
+                    crossed_cars.add(car.id)
                 car.remove_from_simulation()
                 cars.remove(car)
             else:
                 car.draw(screen)
                 car.update(cars, i, speed_factor=SPEED_FACTOR)
+                if car.crossed_intersection and car.id not in crossed_cars:
+                    total_crossings += 1
+                    crossed_cars.add(car.id)
                 
         prev_car = None
 
@@ -165,10 +205,13 @@ def run_simulation():
 
     pygame.quit()
 
-    for idx, collisions in enumerate(collision_records):
-        print(f"Collisions in interval {idx + 1}: {collisions}")
+    for idx, (collisions, crossings) in enumerate(zip(collision_records, intersection_records)):
+        print(f"Interval {idx + 1}: Collisions: {collisions}, Crossings: {crossings}")
+
+    return total_crossings
 
 if __name__ == "__main__":
-    run_simulation()
+    total_crossings = run_simulation()
     print(f"Total Collisions: {count_collisions()}")
+    print(f"Total Crossings: {total_crossings}")
     sys.exit()

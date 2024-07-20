@@ -28,6 +28,7 @@ class Car:
         self.row = None 
         self.starting = False
         self.queue = None
+        self.crossed_intersection = False  # Initialize crossed_intersection
         
         self.vx, self.vy, self.ax, self.ay = 0, 0, 0, 0
         self.nearby_cars = []
@@ -260,31 +261,23 @@ class Car:
             self.x_pos += (self.vx * dt)
             self.y_pos += (self.vy * dt)
             
+            if self.has_crossed_intersection() and not self.crossed_intersection:
+                self.crossed_intersection = True
+                # print(f"Car {self.id} crossed the intersection")
+
     def has_crossed_intersection(self):
         intersection_x = SCREEN_WIDTH / 2
         intersection_y = SCREEN_HEIGHT / 2
+        intersection_size = 100 
 
-        # Adjust the intersection point based on the car's path
         if self.path == Paths.LEFT_RIGHT:
-            intersection_x += 75
+            return self.x_pos > intersection_x - intersection_size / 2
         elif self.path == Paths.RIGHT_LEFT:
-            intersection_x -= 75
+            return self.x_pos < intersection_x + intersection_size / 2
         elif self.path == Paths.BOTTOM_TOP:
-            intersection_y -= 75
+            return self.y_pos < intersection_y + intersection_size / 2
         elif self.path == Paths.TOP_BOTTOM:
-            intersection_y += 75
-
-        # Check if the car has crossed the intersection based on its path
-        if self.path in [Paths.LEFT_RIGHT, Paths.RIGHT_LEFT]:
-            if self.path == Paths.LEFT_RIGHT and self.x_pos > intersection_x:
-                return True
-            elif self.path == Paths.RIGHT_LEFT and self.x_pos < intersection_x:
-                return True
-        elif self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM]:
-            if self.path == Paths.BOTTOM_TOP and self.y_pos < intersection_y:
-                return True
-            elif self.path == Paths.TOP_BOTTOM and self.y_pos > intersection_y:
-                return True
+            return self.y_pos > intersection_y - intersection_size / 2
 
         return False
 

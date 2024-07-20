@@ -7,7 +7,7 @@ SCREEN_WIDTH = 500
 SCREEN_HEIGHT = 500
 RENDER_BORDER = 10
 FRAME_RATE = 60
-SPEED_FACTOR = 1.9
+SPEED_FACTOR = 1.5
 
 class StartingPos(Enum):
     BOTTOM = 0
@@ -47,7 +47,7 @@ class Config:
         self.MAX_VELOCITY = 100
         self.ACCELERATION = 50
         self.COLLISION_DISTANCE = 50
-        self.WAIT_TIME = 2
+        self.WAIT_TIME = 4
         self.DISTANCE_BETWEEN_CARS = 20
 
     # For changing the parameters using our reinforcement learning model
