@@ -1,24 +1,26 @@
 import pygame
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 from car import Car
 from config import *
 from random import randint
 import sys
 
 total_crossings = 0
-start_crossings = 0
 crossed_cars = set()
 
 def is_close_to(x1, y1, x2, y2, tolerance):
-    dist = abs((((x2-x1)**2) + ((y2-y1)**2))**0.5)
+    dist = abs((((x2-x1)**2) + ((y2-y1)**2)) ** 0.5)
     return tolerance > dist
 
 def return_car(path, config):
     if path == Paths.TOP_BOTTOM:
         return Car(StartingPos.TOP, Paths.TOP_BOTTOM, randint(0, 100000), config)
     elif path == Paths.BOTTOM_TOP:
-        return Car(StartingPos.BOTTOM, Paths.BOTTOM_TOP, randint(0,100000), config)
+        return Car(StartingPos.BOTTOM, Paths.BOTTOM_TOP, randint(0, 100000), config)
     elif path == Paths.LEFT_RIGHT:
-        return Car(StartingPos.LEFT, Paths.LEFT_RIGHT, randint(0,100000), config)
+        return Car(StartingPos.LEFT, Paths.LEFT_RIGHT, randint(0, 100000), config)
     elif path == Paths.RIGHT_LEFT:
         return Car(StartingPos.RIGHT, Paths.RIGHT_LEFT, randint(0, 100000), config)
     
@@ -49,27 +51,81 @@ def can_create(car_list, path):
         for car in car_list:
             if car.path == path:
                 if path == Paths.TOP_BOTTOM:
-                    if is_close_to(car.x_pos, car.y_pos, (SCREEN_WIDTH / 2)-8, RENDER_BORDER, 10):
+                    if is_close_to(car.x_pos, car.y_pos, (SCREEN_WIDTH / 2) - 8, RENDER_BORDER, 10):
                         can = False
                 elif path == Paths.BOTTOM_TOP:
-                    if is_close_to(car.x_pos, car.y_pos, (SCREEN_WIDTH / 2)+8, SCREEN_HEIGHT-RENDER_BORDER, 10):
+                    if is_close_to(car.x_pos, car.y_pos, (SCREEN_WIDTH / 2) + 8, SCREEN_HEIGHT - RENDER_BORDER, 10):
                         can = False
                 elif path == Paths.LEFT_RIGHT:
-                    if is_close_to(car.x_pos, car.y_pos, RENDER_BORDER, (SCREEN_HEIGHT / 2)+ 8, 10):
+                    if is_close_to(car.x_pos, car.y_pos, RENDER_BORDER, (SCREEN_HEIGHT / 2) + 8, 10):
                         can = False
                 elif path == Paths.RIGHT_LEFT:
-                    if is_close_to(car.x_pos, car.y_pos, SCREEN_WIDTH-RENDER_BORDER, (SCREEN_HEIGHT / 2)- 8, 2):
+                    if is_close_to(car.x_pos, car.y_pos, SCREEN_WIDTH - RENDER_BORDER, (SCREEN_HEIGHT / 2) - 8, 2):
                         can = False
     return can
 
+collision_records = []  # List to record the number of collisions at each interval
+intersection_records = []  # List to record the number of crossings at each interval
+
+def save_and_plot_data(collision_records, intersection_records):
+    data = pd.DataFrame({
+        'Interval': range(1, len(collision_records) + 1),
+        'Collisions': collision_records,
+        'Crossings': intersection_records
+    })
+
+    # Save to CSV
+    data.to_csv('simulation_data.csv', index=False)
+
+    # Plot data
+    plt.figure(figsize=(10, 10))
+    plt.subplot(2, 1, 1)
+    plt.plot(data['Interval'], data['Collisions'], label='Collisions', marker='o')
+    plt.xlabel('Interval')
+    plt.ylabel('Count')
+    plt.title('Collisions Over Time')
+    plt.legend()
+    plt.grid(True)
+
+    plt.subplot(2, 1, 2)
+    plt.plot(data['Interval'], data['Crossings'], label='Crossings', marker='x')
+    plt.xlabel('Interval')
+    plt.ylabel('Count')
+    plt.title('Crossings Over Time')
+    plt.legend()
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.savefig('simulation_plot.png')
+    plt.show()
+
+def update_plot(i):
+    ax1.clear()
+    ax2.clear()
+
+    ax1.plot(range(1, len(collision_records) + 1), collision_records, label='Collisions', marker='o')
+    ax1.set_xlabel('Interval')
+    ax1.set_ylabel('Count')
+    ax1.set_title('Collisions Over Time')
+    ax1.legend()
+    ax1.grid(True)
+
+    ax2.plot(range(1, len(intersection_records) + 1), intersection_records, label='Crossings', marker='x')
+    ax2.set_xlabel('Interval')
+    ax2.set_ylabel('Count')
+    ax2.set_title('Crossings Over Time')
+    ax2.legend()
+    ax2.grid(True)
+
 def run_simulation():
+    global total_crossings
+
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption('Car Simulation')
     clock = pygame.time.Clock()
     running = True
     start_time = pygame.time.get_ticks()
-    start_crossings = 0
 
     config = Config()  # Create the config instance
     cars = []
@@ -80,23 +136,20 @@ def run_simulation():
     bottom_top_next_interval = bottom_top_interval + randint(-10, 10)
     left_right_next_interval = left_right_interval + randint(-10, 10)
 
-    collision_records = []  # List to record the number of collisions at each interval
-    intersection_records = []  # List to record the number of crossings at each interval
     interval_start_time = start_time
     start_collisions = count_collisions()  # Record collisions at the start of the interval
-    total_crossings = 0  # Total number of cars crossing the intersection
+    interval_crossings = 0  # Reset interval crossings
 
     i = 0
     while running:
-
         current_time = pygame.time.get_ticks()
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 60001:  
+        if elapsed_time > 30001:  
             running = False
 
-        if interval_elapsed_time >= 20000: 
+        if interval_elapsed_time >= 10000: 
             end_collisions = count_collisions()
             interval_collisions = end_collisions - start_collisions  
             collision_records.append(interval_collisions) 
@@ -104,27 +157,8 @@ def run_simulation():
             interval_start_time = current_time  
             bottom_top_next_interval = bottom_top_interval + randint(-10, 10)  
             left_right_next_interval = left_right_interval + randint(-10, 10) 
-            interval_crossings = total_crossings - start_crossings
             intersection_records.append(interval_crossings)
-            start_crossings = total_crossings
-
-            # Calculate and record the number of cars that crossed the intersection in this interval
-            # interval_crossings = count_crossed_intersections(cars) - total_crossings
-            # intersection_records.append(interval_crossings)
-            # total_crossings += interval_crossings
-            for car in cars[:]:
-                if car.at_border():
-                    if car.crossed_intersection and car.id not in crossed_cars:
-                        total_crossings += 1
-                        crossed_cars.add(car.id)
-                    car.remove_from_simulation()
-                    cars.remove(car)
-                else:
-                    car.draw(screen)
-                    car.update(cars, i, speed_factor=SPEED_FACTOR)
-                    if car.crossed_intersection and car.id not in crossed_cars:
-                        total_crossings += 1
-                        crossed_cars.add(car.id)
+            interval_crossings = 0  # Reset interval crossings for the next interval
 
         # Generate BOTTOM_TOP cars at regular intervals
         if i % bottom_top_next_interval == 0:
@@ -179,6 +213,7 @@ def run_simulation():
             if car.at_border():
                 if car.crossed_intersection and car.id not in crossed_cars:
                     total_crossings += 1
+                    interval_crossings += 1  # Increment interval crossings
                     crossed_cars.add(car.id)
                 car.remove_from_simulation()
                 cars.remove(car)
@@ -187,6 +222,7 @@ def run_simulation():
                 car.update(cars, i, speed_factor=SPEED_FACTOR)
                 if car.crossed_intersection and car.id not in crossed_cars:
                     total_crossings += 1
+                    interval_crossings += 1  # Increment interval crossings
                     crossed_cars.add(car.id)
                 
         prev_car = None
@@ -208,9 +244,15 @@ def run_simulation():
     for idx, (collisions, crossings) in enumerate(zip(collision_records, intersection_records)):
         print(f"Interval {idx + 1}: Collisions: {collisions}, Crossings: {crossings}")
 
+    save_and_plot_data(collision_records, intersection_records)
+
     return total_crossings
 
 if __name__ == "__main__":
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
+    ani = animation.FuncAnimation(fig, update_plot, interval=1000)
+    plt.show(block=False)
+
     total_crossings = run_simulation()
     print(f"Total Collisions: {count_collisions()}")
     print(f"Total Crossings: {total_crossings}")
