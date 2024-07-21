@@ -17,8 +17,8 @@ class IntersectionEnv(gym.Env):
         self.left_right_next_interval = self.left_right_interval + np.random.randint(-10, 10)
 
         self.action_space = spaces.Box(
-            low=np.array([50, 25, 20, 2, 5]),  # min values for velocity, acceleration, collision distance, wait time, and distance between cars
-            high=np.array([250, 150, 120, 10, 75]),  # max values for the same parameters
+            low=np.array([50, 25, 20, 2, 10]),  # min values for velocity, acceleration, collision distance, wait time, and distance between cars
+            high=np.array([250, 150, 50, 10, 75]),  # max values for the same parameters
             dtype=np.float32
         )
         self.observation_space = spaces.Box(

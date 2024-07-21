@@ -7,9 +7,14 @@ from config import *
 from random import randint
 import sys
 import numpy as np
+import threading
 
 total_crossings = 0
 crossed_cars = set()
+
+collisions = {}
+collision_records = []  # List to record the number of collisions at each interval
+intersection_records = []  # List to record the number of crossings at each interval
 
 def is_close_to(x1, y1, x2, y2, tolerance):
     dist = abs((((x2-x1)**2) + ((y2-y1)**2)) ** 0.5)
@@ -24,10 +29,7 @@ def return_car(path, config):
         return Car(StartingPos.LEFT, Paths.LEFT_RIGHT, randint(0, 100000), config)
     elif path == Paths.RIGHT_LEFT:
         return Car(StartingPos.RIGHT, Paths.RIGHT_LEFT, randint(0, 100000), config)
-    
     return None
-
-collisions = {}
 
 def add_collision(car1, car2):
     if (car1.id, car2.id) not in collisions:
@@ -36,11 +38,10 @@ def add_collision(car1, car2):
 
 def count_collisions():
     global collisions
-    total = 0  # Initialize total to 0
+    total = 0
     for cars, col in list(collisions.items()):
         if col:
             total += 1
-    
     return total
 
 def count_crossed_intersections(cars):
@@ -64,9 +65,6 @@ def can_create(car_list, path):
                     if is_close_to(car.x_pos, car.y_pos, SCREEN_WIDTH - RENDER_BORDER, (SCREEN_HEIGHT / 2) - 8, 2):
                         can = False
     return can
-
-collision_records = []  # List to record the number of collisions at each interval
-intersection_records = []  # List to record the number of crossings at each interval
 
 def save_and_plot_data(collision_records, intersection_records):
     data = pd.DataFrame({
@@ -117,6 +115,11 @@ def update_plot(i):
     ax2.set_title('Crossings Over Time')
     ax2.legend()
     ax2.grid(True)
+
+def plot_in_thread():
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
+    ani = animation.FuncAnimation(fig, update_plot, interval=1000, cache_frame_data=False)
+    plt.show()
 
 def update_parameters(config, agent):
     state = np.zeros(8)  # Assuming state is a vector of 8 zeros for simplicity
@@ -276,9 +279,9 @@ if __name__ == "__main__":
     agent = PolicyGradientAgent(env)  # Now initialize the agent with the environment
     env.agent = agent  # Set the agent in the environment
     
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
-    ani = animation.FuncAnimation(fig, update_plot, interval=1000, cache_frame_data=False)
-    plt.show(block=False)
+    # Start the plotting in a separate thread
+    plot_thread = threading.Thread(target=plot_in_thread)
+    plot_thread.start()
 
     total_crossings = run_simulation(config, agent)
     print(f"Total Collisions: {count_collisions()}")
