@@ -2,7 +2,7 @@ import numpy as np
 import gym
 from gym import spaces
 from config import Config
-from sim import run_simulation, save_and_plot_data, count_collisions, bottom_top_next_interval, left_right_next_interval
+from sim import run_simulation, save_and_plot_data, count_collisions
 from intersection import Intersection, Paths, StartingPos
 
 class IntersectionEnv(gym.Env):
@@ -12,6 +12,8 @@ class IntersectionEnv(gym.Env):
         self.intersection = intersection
         self.bottom_top_interval = 50
         self.left_right_interval = 50
+        self.bottom_top_next_interval = self.bottom_top_interval + np.random.randint(-10, 10)
+        self.left_right_next_interval = self.left_right_interval + np.random.randint(-10, 10)
 
         self.action_space = spaces.Box(
             low=np.array([50, 25, 20, 2, 5]),  # min values for velocity, acceleration, collision distance, wait time, and distance between cars
@@ -45,7 +47,7 @@ class IntersectionEnv(gym.Env):
             distance_between_cars=distance_between_cars
         )
         
-        interval_results = run_simulation()
+        interval_results, self.bottom_top_next_interval, self.left_right_next_interval = run_simulation()
         total_crossings = sum(crossings for _, crossings in interval_results)
         total_collisions = sum(collisions for collisions, _ in interval_results)
 
@@ -63,8 +65,8 @@ class IntersectionEnv(gym.Env):
         return np.array([
             self.collision_records[-1] if self.collision_records else 0,
             self.intersection_records[-1] if self.intersection_records else 0,
-            bottom_top_next_interval,
-            left_right_next_interval,
+            self.bottom_top_next_interval,
+            self.left_right_next_interval,
             len(self.intersection.motion_path_array),
             self.intersection.number_of_roads,
             self.intersection.size[0],  # width of the intersection

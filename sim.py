@@ -248,11 +248,11 @@ def run_simulation():
 
     save_and_plot_data(collision_records, intersection_records)
 
-    return interval_results
+    return interval_results, bottom_top_next_interval, left_right_next_interval
 
 if __name__ == "__main__":
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
-    ani = animation.FuncAnimation(fig, update_plot, interval=1000)
+    ani = animation.FuncAnimation(fig, update_plot, interval=1000, cache_frame_data=False)
     plt.show(block=False)
 
     total_crossings = run_simulation()
