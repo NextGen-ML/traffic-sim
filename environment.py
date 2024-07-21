@@ -2,7 +2,7 @@ import numpy as np
 import gym
 from gym import spaces
 from config import Config
-from sim import run_simulation, save_and_plot_data, count_collisions
+from sim import run_simulation, save_and_plot_data, count_collisions, bottom_top_next_interval, left_right_next_interval
 from intersection import Intersection, Paths, StartingPos
 
 class IntersectionEnv(gym.Env):
@@ -14,14 +14,14 @@ class IntersectionEnv(gym.Env):
         self.left_right_interval = 50
 
         self.action_space = spaces.Box(
-            low=np.array([50, 25, 20, 2, 5]),  # min value of velocity, acceleration, collision distance, wait time, and distance between cars
-            high=np.array([250, 150, 120, 10, 75]),  # max values for params
+            low=np.array([50, 25, 20, 2, 5]),  # min values for velocity, acceleration, collision distance, wait time, and distance between cars
+            high=np.array([250, 150, 120, 10, 75]),  # max values for the same parameters
             dtype=np.float32
         )
         self.observation_space = spaces.Box(
             low=0,
             high=np.inf,
-            shape=(7,),  
+            shape=(8,),  
             dtype=np.float32
         )
         self.collision_records = []
@@ -63,11 +63,12 @@ class IntersectionEnv(gym.Env):
         return np.array([
             self.collision_records[-1] if self.collision_records else 0,
             self.intersection_records[-1] if self.intersection_records else 0,
-            self.bottom_top_interval,
-            self.left_right_interval,
-            len(four_way.motion_path_array),
-            four_way.number_of_roads,
-            four_way.size,
+            bottom_top_next_interval,
+            left_right_next_interval,
+            len(self.intersection.motion_path_array),
+            self.intersection.number_of_roads,
+            self.intersection.size[0],  # width of the intersection
+            self.intersection.size[1],  # height of the intersection
         ], dtype=np.float32)
 
     def render(self, mode='human'):
