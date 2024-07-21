@@ -6,10 +6,11 @@ from sim import run_simulation, save_and_plot_data, count_collisions
 from intersection import Intersection, Paths, StartingPos
 
 class IntersectionEnv(gym.Env):
-    def __init__(self, config, intersection):
+    def __init__(self, config, intersection, agent=None):
         super(IntersectionEnv, self).__init__()
         self.config = config
         self.intersection = intersection
+        self.agent = agent  # Add agent parameter
         self.bottom_top_interval = 50
         self.left_right_interval = 50
         self.bottom_top_next_interval = self.bottom_top_interval + np.random.randint(-10, 10)
@@ -38,6 +39,8 @@ class IntersectionEnv(gym.Env):
         return self._get_state()
 
     def step(self, action):
+        # Clip the action using NumPy to ensure it stays within the action space bounds
+        action = np.clip(action, self.action_space.low, self.action_space.high)
         max_velocity, acceleration, collision_distance, wait_time, distance_between_cars = action
         self.config.update_parameters(
             max_velocity=max_velocity,
@@ -47,7 +50,7 @@ class IntersectionEnv(gym.Env):
             distance_between_cars=distance_between_cars
         )
         
-        interval_results, self.bottom_top_next_interval, self.left_right_next_interval = run_simulation()
+        interval_results, self.bottom_top_next_interval, self.left_right_next_interval = run_simulation(self.config, self.agent)
         total_crossings = sum(crossings for _, crossings in interval_results)
         total_collisions = sum(collisions for collisions, _ in interval_results)
 

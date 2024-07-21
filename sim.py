@@ -6,6 +6,7 @@ from car import Car
 from config import *
 from random import randint
 import sys
+import numpy as np
 
 total_crossings = 0
 crossed_cars = set()
@@ -117,7 +118,19 @@ def update_plot(i):
     ax2.legend()
     ax2.grid(True)
 
-def run_simulation():
+def update_parameters(config, agent):
+    state = np.zeros(8)  # Assuming state is a vector of 8 zeros for simplicity
+    action = agent.select_action(state)  # Use the agent to select an action based on the current state
+    max_velocity, acceleration, collision_distance, wait_time, distance_between_cars = action
+    config.update_parameters(
+        max_velocity=max_velocity,
+        acceleration=acceleration,
+        collision_distance=collision_distance,
+        wait_time=wait_time,
+        distance_between_cars=distance_between_cars
+    )
+
+def run_simulation(config, agent):
     global total_crossings
 
     pygame.init()
@@ -127,7 +140,6 @@ def run_simulation():
     running = True
     start_time = pygame.time.get_ticks()
 
-    config = Config()  # Create the config instance
     cars = []
     bottom_top_interval = 50  # Base interval in frames for generating BOTTOM_TOP cars
     left_right_interval = 50  # Base interval in frames for generating LEFT_RIGHT cars
@@ -147,10 +159,10 @@ def run_simulation():
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 30005:  
+        if elapsed_time > 100005:  
             running = False
 
-        if interval_elapsed_time >= 10000: 
+        if interval_elapsed_time >= 20000: 
             end_collisions = count_collisions()
             interval_collisions = end_collisions - start_collisions  
             collision_records.append(interval_collisions) 
@@ -161,6 +173,9 @@ def run_simulation():
             intersection_records.append(interval_crossings)
             interval_results.append((interval_collisions, interval_crossings))
             interval_crossings = 0  # Reset interval crossings for the next interval
+            
+            # Update parameters every 10000 milliseconds
+            update_parameters(config, agent)
 
         # Generate BOTTOM_TOP cars at regular intervals
         if i % bottom_top_next_interval == 0:
@@ -191,13 +206,15 @@ def run_simulation():
         font = pygame.font.Font(None, 16)  
         collision_font = pygame.font.Font(None, 32) 
 
+        # Fetch the latest parameters from the config instance
+        params = config.get_parameters()
         # Display the configuration parameters on the left side
         params_text = [
-            f"MAX_VELOCITY: {config.MAX_VELOCITY}",
-            f"ACCELERATION: {config.ACCELERATION}",
-            f"COLLISION_DISTANCE: {config.COLLISION_DISTANCE}",
-            f"WAIT_TIME: {config.WAIT_TIME}",
-            f"DISTANCE_BETWEEN_CARS: {config.DISTANCE_BETWEEN_CARS}"
+            f"MAX_VELOCITY: {params['MAX_VELOCITY']}",
+            f"ACCELERATION: {params['ACCELERATION']}",
+            f"COLLISION_DISTANCE: {params['COLLISION_DISTANCE']}",
+            f"WAIT_TIME: {params['WAIT_TIME']}",
+            f"DISTANCE_BETWEEN_CARS: {params['DISTANCE_BETWEEN_CARS']}"
         ]
 
         for idx, text in enumerate(params_text):
@@ -251,11 +268,19 @@ def run_simulation():
     return interval_results, bottom_top_next_interval, left_right_next_interval
 
 if __name__ == "__main__":
+    from policy_agent import PolicyGradientAgent
+    from environment import IntersectionEnv, four_way
+    from config import Config
+    config = Config()
+    env = IntersectionEnv(config, four_way, None)  # Temporarily pass None for agent
+    agent = PolicyGradientAgent(env)  # Now initialize the agent with the environment
+    env.agent = agent  # Set the agent in the environment
+    
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
     ani = animation.FuncAnimation(fig, update_plot, interval=1000, cache_frame_data=False)
     plt.show(block=False)
 
-    total_crossings = run_simulation()
+    total_crossings = run_simulation(config, agent)
     print(f"Total Collisions: {count_collisions()}")
     print(f"Total Crossings: {total_crossings}")
     sys.exit()

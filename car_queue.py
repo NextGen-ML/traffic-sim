@@ -46,7 +46,7 @@ class CarQueue:
 
     def run_queue_management(self):
         while self.active:
-            time.sleep(self.config.WAIT_TIME)  
+            time.sleep(float(self.config.WAIT_TIME))  # Convert numpy.float32 to Python float
             self.reorder_queue()
 
     def reorder_queue(self):

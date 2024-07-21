@@ -20,7 +20,9 @@ def train_agent(agent, env, num_episodes):
 
 if __name__ == "__main__":
     config = Config()
-    env = IntersectionEnv(config, four_way)
-    agent = PolicyGradientAgent(env)
+    env = IntersectionEnv(config, four_way, None)  # Temporarily pass None for agent
+    agent = PolicyGradientAgent(env)  
+    env.agent = agent 
+
     train_agent(agent, env, num_episodes=1000)
     env.render()
