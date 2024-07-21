@@ -141,12 +141,13 @@ def run_simulation():
     interval_crossings = 0  # Reset interval crossings
 
     i = 0
+    interval_results = []
     while running:
         current_time = pygame.time.get_ticks()
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 30001:  
+        if elapsed_time > 30005:  
             running = False
 
         if interval_elapsed_time >= 10000: 
@@ -158,6 +159,7 @@ def run_simulation():
             bottom_top_next_interval = bottom_top_interval + randint(-10, 10)  
             left_right_next_interval = left_right_interval + randint(-10, 10) 
             intersection_records.append(interval_crossings)
+            interval_results.append((interval_collisions, interval_crossings))
             interval_crossings = 0  # Reset interval crossings for the next interval
 
         # Generate BOTTOM_TOP cars at regular intervals
@@ -246,7 +248,7 @@ def run_simulation():
 
     save_and_plot_data(collision_records, intersection_records)
 
-    return total_crossings
+    return interval_results
 
 if __name__ == "__main__":
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
