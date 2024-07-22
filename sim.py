@@ -8,6 +8,8 @@ from random import randint
 import sys
 import numpy as np
 import threading
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.animation import FuncAnimation
 
 total_crossings = 0
 crossed_cars = set()
@@ -98,28 +100,41 @@ def save_and_plot_data(collision_records, intersection_records):
     plt.savefig('simulation_plot.png')
     plt.show()
 
-def update_plot(i):
-    ax1.clear()
-    ax2.clear()
+plt.ion()  # Turn on interactive mode
 
-    ax1.plot(range(1, len(collision_records) + 1), collision_records, label='Collisions', marker='o')
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 10))
+collision_line, = ax1.plot([], [], label='Collisions', marker='o')
+crossing_line, = ax2.plot([], [], label='Crossings', marker='x')
+
+def setup_plot():
     ax1.set_xlabel('Interval')
     ax1.set_ylabel('Count')
     ax1.set_title('Collisions Over Time')
     ax1.legend()
     ax1.grid(True)
 
-    ax2.plot(range(1, len(intersection_records) + 1), intersection_records, label='Crossings', marker='x')
     ax2.set_xlabel('Interval')
     ax2.set_ylabel('Count')
     ax2.set_title('Crossings Over Time')
     ax2.legend()
     ax2.grid(True)
 
-def plot_in_thread():
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
-    ani = animation.FuncAnimation(fig, update_plot, interval=1000, cache_frame_data=False)
-    plt.show()
+def update_plot(frame):
+    collision_line.set_data(range(1, len(collision_records) + 1), collision_records)
+    crossing_line.set_data(range(1, len(intersection_records) + 1), intersection_records)
+    
+    ax1.relim()
+    ax1.autoscale_view()
+    ax2.relim()
+    ax2.autoscale_view()
+    
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+
+def start_plot_animation():
+    setup_plot()
+    anim = FuncAnimation(fig, update_plot, interval=1000, cache_frame_data=False)
+    plt.show(block=False)
 
 def update_parameters(config, agent):
     state = np.zeros(8)  # Assuming state is a vector of 8 zeros for simplicity
@@ -134,7 +149,7 @@ def update_parameters(config, agent):
     )
 
 def run_simulation(config, agent):
-    global total_crossings
+    global total_crossings, collision_records, intersection_records
 
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -143,17 +158,17 @@ def run_simulation(config, agent):
     running = True
     start_time = pygame.time.get_ticks()
 
-    cars = []
-    bottom_top_interval = 50  # Base interval in frames for generating BOTTOM_TOP cars
-    left_right_interval = 50  # Base interval in frames for generating LEFT_RIGHT cars
+    start_plot_animation()
 
-    # Generate random initial intervals within +- 15 of the base interval
+    cars = []
+    bottom_top_interval = 50
+    left_right_interval = 50
     bottom_top_next_interval = bottom_top_interval + randint(-10, 10)
     left_right_next_interval = left_right_interval + randint(-10, 10)
 
     interval_start_time = start_time
-    start_collisions = count_collisions()  # Record collisions at the start of the interval
-    interval_crossings = 0  # Reset interval crossings
+    start_collisions = count_collisions()
+    interval_crossings = 0
 
     i = 0
     interval_results = []
@@ -162,10 +177,10 @@ def run_simulation(config, agent):
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 100005:  
+        if elapsed_time > 20005:  
             running = False
 
-        if interval_elapsed_time >= 20000: 
+        if interval_elapsed_time >= 10000: 
             end_collisions = count_collisions()
             interval_collisions = end_collisions - start_collisions  
             collision_records.append(interval_collisions) 
@@ -175,17 +190,15 @@ def run_simulation(config, agent):
             left_right_next_interval = left_right_interval + randint(-10, 10) 
             intersection_records.append(interval_crossings)
             interval_results.append((interval_collisions, interval_crossings))
-            interval_crossings = 0  # Reset interval crossings for the next interval
+            interval_crossings = 0
             
-            # Update parameters every 10000 milliseconds
             update_parameters(config, agent)
 
-        # Generate BOTTOM_TOP cars at regular intervals
+        # Generate cars
         if i % bottom_top_next_interval == 0:
             if can_create(cars, Paths.BOTTOM_TOP):
                 cars.append(return_car(Paths.BOTTOM_TOP, config))
 
-        # Generate LEFT_RIGHT cars at regular intervals
         if i % left_right_next_interval == 0:
             if can_create(cars, Paths.LEFT_RIGHT):
                 cars.append(return_car(Paths.LEFT_RIGHT, config))
@@ -199,19 +212,18 @@ def run_simulation(config, agent):
                     temp = not cars[0].get_row() if cars[0].get_row() is not None else False
                     cars[0].set_row(temp)
 
-        # Screen clearing and rectangle drawing
+        # Screen clearing and drawing
         screen.fill((255, 255, 255))
         rect_width, rect_height = 100, 100
         rect_x = (SCREEN_WIDTH / 2) - (rect_width / 2)
         rect_y = (SCREEN_HEIGHT / 2) - (rect_height / 2)
         pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height), width=5)
 
+        # Display parameters and stats
         font = pygame.font.Font(None, 16)  
         collision_font = pygame.font.Font(None, 32) 
 
-        # Fetch the latest parameters from the config instance
         params = config.get_parameters()
-        # Display the configuration parameters on the left side
         params_text = [
             f"MAX_VELOCITY: {params['MAX_VELOCITY']}",
             f"ACCELERATION: {params['ACCELERATION']}",
@@ -230,12 +242,12 @@ def run_simulation(config, agent):
         crossings_text = collision_font.render(f"Crossings: {total_crossings}", True, (0, 0, 255))
         screen.blit(crossings_text, (350, 50))
 
-        # Update cars
+        # Update and draw cars
         for car in cars[:]:
             if car.at_border():
                 if car.crossed_intersection and car.id not in crossed_cars:
                     total_crossings += 1
-                    interval_crossings += 1  # Increment interval crossings
+                    interval_crossings += 1
                     crossed_cars.add(car.id)
                 car.remove_from_simulation()
                 cars.remove(car)
@@ -244,10 +256,8 @@ def run_simulation(config, agent):
                 car.update(cars, i, speed_factor=SPEED_FACTOR)
                 if car.crossed_intersection and car.id not in crossed_cars:
                     total_crossings += 1
-                    interval_crossings += 1  # Increment interval crossings
+                    interval_crossings += 1
                     crossed_cars.add(car.id)
-                
-        prev_car = None
 
         # Check for collisions
         for j, car1 in enumerate(cars):
@@ -255,9 +265,11 @@ def run_simulation(config, agent):
                 if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 15):
                     add_collision(car1, car2)
 
-            prev_car = car
-
+        # if i % 30 == 0:  # Update plot every 30 frames
+        #     plot_surface = update_plot()
+        #     screen.blit(plot_surface, (SCREEN_WIDTH - plot_surface.get_width(), 0))
         pygame.display.flip()
+        # plt.pause(3)  # Give matplotlib a chance to update
         clock.tick(144)
         i += 1
 
@@ -274,14 +286,11 @@ if __name__ == "__main__":
     from policy_agent import PolicyGradientAgent
     from environment import IntersectionEnv, four_way
     from config import Config
-    config = Config()
-    env = IntersectionEnv(config, four_way, None)  # Temporarily pass None for agent
-    agent = PolicyGradientAgent(env)  # Now initialize the agent with the environment
-    env.agent = agent  # Set the agent in the environment
     
-    # Start the plotting in a separate thread
-    plot_thread = threading.Thread(target=plot_in_thread)
-    plot_thread.start()
+    config = Config()
+    env = IntersectionEnv(config, four_way, None)
+    agent = PolicyGradientAgent(env)
+    env.agent = agent
 
     total_crossings = run_simulation(config, agent)
     print(f"Total Collisions: {count_collisions()}")
