@@ -169,7 +169,7 @@ class Car:
         if abs(self.ax) > self.config.ACCELERATION:
             self.ax = self.config.ACCELERATION if self.ax > 0 else -self.config.ACCELERATION
 
-    def update(self, cars, i, speed_factor=1):
+    def update(self, cars, i, speed_factor=1.5):
         self.get_cars(cars)
         self.update_parameters()
         

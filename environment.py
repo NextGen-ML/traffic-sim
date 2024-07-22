@@ -2,7 +2,7 @@ import numpy as np
 import gym
 from gym import spaces
 from config import Config
-from sim import run_simulation, save_and_plot_data, count_collisions
+from sim import run_simulation, save_and_plot_data, count_collisions, reward_records
 from intersection import Intersection, Paths, StartingPos
 
 class IntersectionEnv(gym.Env):
@@ -33,11 +33,12 @@ class IntersectionEnv(gym.Env):
     def reset(self):
         self.collision_records = []
         self.intersection_records = []
+        global reward_records 
+        reward_records = []
         self.config.update_parameters()
         self.bottom_top_interval = 50
         self.left_right_interval = 50
         return self._get_state()
-
     def step(self, action):
         # Clip the action using NumPy to ensure it stays within the action space bounds
         action = np.clip(action, self.action_space.low, self.action_space.high)
@@ -51,16 +52,20 @@ class IntersectionEnv(gym.Env):
         )
         
         interval_results, self.bottom_top_next_interval, self.left_right_next_interval = run_simulation(self.config, self.agent)
-        total_crossings = sum(crossings for _, crossings in interval_results)
-        total_collisions = sum(collisions for collisions, _ in interval_results)
-
+    
+        # Process interval results
+        total_crossings = 0
+        total_collisions = 0
         for interval_collisions, interval_crossings in interval_results:
             self.collision_records.append(interval_collisions)
             self.intersection_records.append(interval_crossings)
+            total_crossings += interval_crossings
+            total_collisions += interval_collisions
 
-        reward = total_crossings - total_collisions * 10
+        reward = total_crossings - total_collisions * 5
+        reward_records.append(reward)
         obs = self._get_state()
-        done = len(self.collision_records) >= 10
+        done = len(self.collision_records) >= 10000
 
         return obs, reward, done, {}
 
@@ -77,7 +82,7 @@ class IntersectionEnv(gym.Env):
         ], dtype=np.float32)
 
     def render(self, mode='human'):
-        save_and_plot_data(self.collision_records, self.intersection_records)
+        save_and_plot_data(self.collision_records, self.intersection_records, reward_records)
 
 # Define intersection
 four_way = Intersection(
@@ -87,6 +92,5 @@ four_way = Intersection(
     size=(100, 100)
 )
 
-# Initialize environment with config and intersection
 config = Config()
 env = IntersectionEnv(config, four_way)
