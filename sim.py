@@ -8,7 +8,6 @@ from random import randint
 import sys
 import numpy as np
 import threading
-from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.animation import FuncAnimation
 
 total_crossings = 0
@@ -106,7 +105,9 @@ fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 10))
 collision_line, = ax1.plot([], [], label='Collisions', marker='o')
 crossing_line, = ax2.plot([], [], label='Crossings', marker='x')
 
-def setup_plot():
+def initialize_plot():
+    global collision_line, crossing_line
+    
     ax1.set_xlabel('Interval')
     ax1.set_ylabel('Count')
     ax1.set_title('Collisions Over Time')
@@ -118,8 +119,14 @@ def setup_plot():
     ax2.set_title('Crossings Over Time')
     ax2.legend()
     ax2.grid(True)
+    
+    plt.tight_layout()
+    fig.canvas.draw()
+    plt.pause(0.001)
 
-def update_plot(frame):
+def update_plot():
+    global collision_line, crossing_line, ax1, ax2, fig
+    
     collision_line.set_data(range(1, len(collision_records) + 1), collision_records)
     crossing_line.set_data(range(1, len(intersection_records) + 1), intersection_records)
     
@@ -130,11 +137,6 @@ def update_plot(frame):
     
     fig.canvas.draw()
     fig.canvas.flush_events()
-
-def start_plot_animation():
-    setup_plot()
-    anim = FuncAnimation(fig, update_plot, interval=1000, cache_frame_data=False)
-    plt.show(block=False)
 
 def update_parameters(config, agent):
     state = np.zeros(8)  # Assuming state is a vector of 8 zeros for simplicity
@@ -158,7 +160,7 @@ def run_simulation(config, agent):
     running = True
     start_time = pygame.time.get_ticks()
 
-    start_plot_animation()
+    initialize_plot()
 
     cars = []
     bottom_top_interval = 50
@@ -177,10 +179,10 @@ def run_simulation(config, agent):
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 20005:  
+        if elapsed_time > 100005:  
             running = False
 
-        if interval_elapsed_time >= 10000: 
+        if interval_elapsed_time >= 20000: 
             end_collisions = count_collisions()
             interval_collisions = end_collisions - start_collisions  
             collision_records.append(interval_collisions) 
@@ -265,11 +267,10 @@ def run_simulation(config, agent):
                 if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 15):
                     add_collision(car1, car2)
 
-        # if i % 30 == 0:  # Update plot every 30 frames
-        #     plot_surface = update_plot()
-        #     screen.blit(plot_surface, (SCREEN_WIDTH - plot_surface.get_width(), 0))
+        if i % 10000 == 0:  
+            update_plot()
+
         pygame.display.flip()
-        # plt.pause(3)  # Give matplotlib a chance to update
         clock.tick(144)
         i += 1
 
@@ -295,4 +296,6 @@ if __name__ == "__main__":
     total_crossings = run_simulation(config, agent)
     print(f"Total Collisions: {count_collisions()}")
     print(f"Total Crossings: {total_crossings}")
-    sys.exit()
+    
+    plt.ioff()  # Turn off interactive mode
+    plt.show()  # This will block and keep the final plot open
