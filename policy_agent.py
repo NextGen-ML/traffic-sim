@@ -11,42 +11,53 @@ class PolicyNetwork(nn.Module):
     def __init__(self, input_size, output_size):
         super(PolicyNetwork, self).__init__()
         self.fc1 = nn.Linear(input_size, 128)
+        self.ln1 = nn.LayerNorm(128)
         self.fc2 = nn.Linear(128, 128)
+        self.ln2 = nn.LayerNorm(128)
         self.fc3 = nn.Linear(128, output_size)
-        self.log_std = nn.Parameter(torch.zeros(output_size))  # Learnable log_std
+        self.log_std = nn.Parameter(torch.zeros(output_size))
         
         # Initialize weights
-        nn.init.kaiming_normal_(self.fc1.weight)
-        nn.init.kaiming_normal_(self.fc2.weight)
-        nn.init.xavier_normal_(self.fc3.weight)
+        nn.init.xavier_uniform_(self.fc1.weight)
+        nn.init.xavier_uniform_(self.fc2.weight)
+        nn.init.xavier_uniform_(self.fc3.weight)
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        mu = self.fc3(x)
-        std = torch.exp(self.log_std)  # Ensure std is positive
+        x = F.elu(self.ln1(self.fc1(x)))
+        x = F.elu(self.ln2(self.fc2(x)))
+        mu = F.tanh(self.fc3(x))
+        std = F.softplus(self.log_std).expand_as(mu)
         return mu, std
 
 class PolicyGradientAgent:
-    def __init__(self, env, entropy_coeff=0.1): # TODO: Gradually decrease over time
+    def __init__(self, env, entropy_coeff=1):
         self.env = env
         self.policy_net = PolicyNetwork(env.observation_space.shape[0], env.action_space.shape[0])
-        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=0.01)
+        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=0.0003)
         self.episode_log_probs = []
         self.episode_rewards = []
         self.entropy_coeff = entropy_coeff
 
     def select_action(self, state):
-        state = torch.FloatTensor(state)
+        state = torch.FloatTensor(state).unsqueeze(0)
         mu, std = self.policy_net(state)
+        if torch.isnan(mu).any() or torch.isnan(std).any():
+            raise ValueError("NaN values in mu or std of the policy network.")
         dist = Normal(mu, std)
         action = dist.sample()
         log_prob = dist.log_prob(action).sum(dim=-1)
         self.episode_log_probs.append((log_prob, dist.entropy().sum(dim=-1)))
-        # Clamp action using NumPy to ensure it stays within bounds
-        action = action.detach().numpy()
-        action = np.clip(action, self.env.action_space.low, self.env.action_space.high)
-        return action
+        
+        # Scale the action from [-1, 1] to the action space range
+        action = action.squeeze(0).detach().numpy()
+        low = self.env.action_space.low
+        high = self.env.action_space.high
+        scaled_action = low + (0.5 * (action + 1.0) * (high - low))
+        
+        # Debugging information
+        print(f"mu: {mu.detach().numpy()}, std: {std.detach().numpy()}, action: {action}, scaled_action: {scaled_action}")
+
+        return scaled_action
 
     def update_policy(self):
         R = 0
@@ -58,44 +69,15 @@ class PolicyGradientAgent:
             returns.insert(0, R)
 
         returns = torch.tensor(returns)
-        returns = (returns - returns.mean()) / (returns.std() + 1e-9)
 
         for (log_prob, entropy), R in zip(self.episode_log_probs, returns):
             policy_loss.append(-log_prob * R - self.entropy_coeff * entropy)
 
         self.optimizer.zero_grad()
-        policy_loss = torch.cat(policy_loss).sum()
+        policy_loss = torch.stack(policy_loss).sum()
         policy_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1.0)
         self.optimizer.step()
 
         self.episode_log_probs = []
         self.episode_rewards = []
-
-from policy_agent import PolicyGradientAgent
-from environment import IntersectionEnv, four_way
-from config import Config
-
-def train_agent(agent, env, num_episodes):
-    for episode in range(num_episodes):
-        state = env.reset()
-        done = False
-        total_reward = 0
-
-        while not done:
-            action = agent.select_action(state)
-            next_state, reward, done, _ = env.step(action)
-            agent.episode_rewards.append(reward)
-            state = next_state
-            total_reward += reward
-
-        agent.update_policy()
-        print(f"Episode {episode + 1}: Total Reward: {total_reward}")
-
-if __name__ == "__main__":
-    config = Config()
-    env = IntersectionEnv(config, four_way, None)  # Temporarily pass None for agent
-    agent = PolicyGradientAgent(env)  
-    env.agent = agent 
-
-    train_agent(agent, env, num_episodes=1000)
-    env.render()

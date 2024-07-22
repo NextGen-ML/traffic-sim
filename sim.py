@@ -108,7 +108,7 @@ def update_plot(collision_records, intersection_records, reward_records):
     fig.canvas.draw()
     fig.canvas.flush_events()
 
-def save_and_plot_data(collision_records, intersection_records, reward_records):
+def save_and_plot_data():
     # Save to CSV
     data = pd.DataFrame({
         'Interval': range(1, len(collision_records) + 1),
@@ -157,12 +157,14 @@ def run_simulation(config, agent):
 
     i = 0
     interval_results = []
+    is_first_interval = True  # Add this flag
+
     while running:
         current_time = pygame.time.get_ticks()
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 60003:  
+        if elapsed_time > 100003:  
             running = False
 
         if interval_elapsed_time >= 20000:
@@ -170,18 +172,19 @@ def run_simulation(config, agent):
             end_collisions = count_collisions()
             interval_collisions = end_collisions - start_collisions
             interval_crossings = interval_crossings
- 
-            interval_results.append((interval_collisions, interval_crossings))
+
+            interval_results.append((interval_collisions, interval_crossings, is_first_interval, bottom_top_next_interval, left_right_next_interval))
             
             collision_records.append(interval_collisions)
             intersection_records.append(interval_crossings)
             
-            reward = interval_crossings - interval_collisions * 5
+            reward = interval_crossings - interval_collisions * 100
             reward_records.append(reward)
             
             start_collisions = end_collisions
             interval_crossings = 0
             interval_start_time = current_time
+            is_first_interval = False  # Set to False after the first interval
 
         # Generate cars
         if i % bottom_top_next_interval == 0:
@@ -264,10 +267,10 @@ def run_simulation(config, agent):
 
     pygame.quit()
 
-    for idx, (collisions, crossings) in enumerate(zip(collision_records, intersection_records)):
-        print(f"Interval {idx + 1}: Collisions: {collisions}, Crossings: {crossings}")
+    for idx, (collisions, crossings, first_interval, bottom_top_next_interval, left_right_next_interval) in enumerate(interval_results):
+        print(f"Interval {idx + 1}: Collisions: {collisions}, Crossings: {crossings}, First Interval: {first_interval}, Bottom-Top Interval: {bottom_top_next_interval}, Left-Right Interval: {left_right_next_interval}")
 
-    save_and_plot_data(collision_records, intersection_records, reward_records)
+    save_and_plot_data()
 
     return interval_results, bottom_top_next_interval, left_right_next_interval
 

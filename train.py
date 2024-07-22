@@ -12,21 +12,27 @@ def train_agent(agent, env, num_episodes):
         done = False
         total_reward = 0
 
-        while not done:
-            action = agent.select_action(state)
-            next_state, reward, done, _ = env.step(action)
-            agent.episode_rewards.append(reward)
-            state = next_state
-            total_reward += reward
+        try:
+            while not done:
+                action = agent.select_action(state)
+                next_state, reward, done, _ = env.step(action)
+                agent.episode_rewards.append(reward)
+                state = next_state
+                total_reward += reward
 
-        agent.update_policy()
-        print(f"Episode {episode + 1}: Total Reward: {total_reward}")
+            agent.update_policy()
+            print(f"Episode {episode + 1}: Total Reward: {total_reward}")
 
-        # Update the plot after each episode
-        save_and_plot_data(env.collision_records, env.intersection_records, env.reward_records)
+            # Update the plot after each episode
+            save_and_plot_data()
+
+        except ValueError as e:
+            print(f"Error in episode {episode + 1}: {str(e)}")
+            print(f"Current state: {state}")
+            break
 
     plt.ioff()  
-    plt.show() 
+    plt.show()
 
 if __name__ == "__main__":
     config = Config()

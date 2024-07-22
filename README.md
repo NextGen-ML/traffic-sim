@@ -1,5 +1,5 @@
 # traffic-sim
 
-run ```sim.py```
+run ```train.py```
 
 v1 is done!

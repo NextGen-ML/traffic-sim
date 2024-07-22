@@ -10,37 +10,37 @@ class IntersectionEnv(gym.Env):
         super(IntersectionEnv, self).__init__()
         self.config = config
         self.intersection = intersection
-        self.agent = agent  # Add agent parameter
+        self.agent = agent
         self.bottom_top_interval = 50
         self.left_right_interval = 50
         self.bottom_top_next_interval = self.bottom_top_interval + np.random.randint(-10, 10)
         self.left_right_next_interval = self.left_right_interval + np.random.randint(-10, 10)
 
         self.action_space = spaces.Box(
-            low=np.array([50, 25, 20, 2, 10]),  # min values for velocity, acceleration, collision distance, wait time, and distance between cars
-            high=np.array([250, 150, 50, 10, 75]),  # max values for the same parameters
+            low=np.array([50, 25, 20, 2, 10]),
+            high=np.array([250, 150, 50, 10, 75]),
             dtype=np.float32
         )
         self.observation_space = spaces.Box(
             low=0,
             high=np.inf,
-            shape=(8,),  
+            shape=(11,),  # Adjusted the shape to 11
             dtype=np.float32
         )
         self.collision_records = []
         self.intersection_records = []
+        self.reward_records = []
 
     def reset(self):
         self.collision_records = []
         self.intersection_records = []
-        global reward_records 
-        reward_records = []
+        self.reward_records = []
         self.config.update_parameters()
         self.bottom_top_interval = 50
         self.left_right_interval = 50
-        return self._get_state()
+        return self._get_state(is_first_interval=True)
+
     def step(self, action):
-        # Clip the action using NumPy to ensure it stays within the action space bounds
         action = np.clip(action, self.action_space.low, self.action_space.high)
         max_velocity, acceleration, collision_distance, wait_time, distance_between_cars = action
         self.config.update_parameters(
@@ -53,36 +53,57 @@ class IntersectionEnv(gym.Env):
         
         interval_results, self.bottom_top_next_interval, self.left_right_next_interval = run_simulation(self.config, self.agent)
     
-        # Process interval results
         total_crossings = 0
         total_collisions = 0
-        for interval_collisions, interval_crossings in interval_results:
+        for interval_collisions, interval_crossings, is_first_interval, bottom_top_next_interval, left_right_next_interval in interval_results:
             self.collision_records.append(interval_collisions)
             self.intersection_records.append(interval_crossings)
             total_crossings += interval_crossings
             total_collisions += interval_collisions
 
-        reward = total_crossings - total_collisions * 5
-        reward_records.append(reward)
-        obs = self._get_state()
-        done = len(self.collision_records) >= 10000
+        reward = total_crossings - total_collisions * 500
+        self.reward_records.append(reward)
+        obs = self._get_state(is_first_interval, bottom_top_next_interval, left_right_next_interval)
+        done = len(self.collision_records) >= 3
 
         return obs, reward, done, {}
 
-    def _get_state(self):
-        return np.array([
+    def _get_state(self, is_first_interval=False, bottom_top_next_interval=0, left_right_next_interval=0):
+        state = np.array([
             self.collision_records[-1] if self.collision_records else 0,
             self.intersection_records[-1] if self.intersection_records else 0,
             self.bottom_top_next_interval,
             self.left_right_next_interval,
+            bottom_top_next_interval,  # Add current interval values
+            left_right_next_interval,  # Add current interval values
             len(self.intersection.motion_path_array),
             self.intersection.number_of_roads,
-            self.intersection.size[0],  # width of the intersection
-            self.intersection.size[1],  # height of the intersection
+            self.intersection.size[0],
+            self.intersection.size[1],
+            1 if is_first_interval else 0  # Add the first interval flag
         ], dtype=np.float32)
 
+        # Print original state values
+        print("Original state values:", state)
+
+        state_mean = np.mean(state)
+        state_std = np.std(state) + 1e-8  # Avoid division by zero
+        normalized_state = (state - state_mean) / state_std
+
+        return normalized_state
+
     def render(self, mode='human'):
-        save_and_plot_data(self.collision_records, self.intersection_records, reward_records)
+        self._sync_records_length()
+        save_and_plot_data(self.collision_records, self.intersection_records, self.reward_records)
+
+    def _sync_records_length(self):
+        max_length = max(len(self.collision_records), len(self.intersection_records), len(self.reward_records))
+        while len(self.collision_records) < max_length:
+            self.collision_records.append(0)
+        while len(self.intersection_records) < max_length:
+            self.intersection_records.append(0)
+        while len(self.reward_records) < max_length:
+            self.reward_records.append(0)
 
 # Define intersection
 four_way = Intersection(
