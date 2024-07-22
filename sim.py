@@ -69,64 +69,13 @@ def can_create(car_list, path):
                         can = False
     return can
 
-def save_and_plot_data(collision_records, intersection_records, reward_records):
-    max_length = max(len(collision_records), len(intersection_records), len(reward_records))
-    
-    # Extend the lists to have the same length
-    collision_records.extend([0] * (max_length - len(collision_records)))
-    intersection_records.extend([0] * (max_length - len(intersection_records)))
-    reward_records.extend([0] * (max_length - len(reward_records)))
-
-    data = pd.DataFrame({
-        'Interval': range(1, max_length + 1),
-        'Collisions': collision_records,
-        'Crossings': intersection_records,
-        'Rewards': reward_records
-    })
-
-    # Save to CSV
-    data.to_csv('simulation_data.csv', index=False)
-
-    # Plot data
-    plt.figure(figsize=(12, 12))
-    plt.subplot(3, 1, 1)
-    plt.plot(data['Interval'], data['Collisions'], label='Collisions', marker='o')
-    plt.xlabel('Interval')
-    plt.ylabel('Count')
-    plt.title('Collisions Over Time')
-    plt.legend()
-    plt.grid(True)
-
-    plt.subplot(3, 1, 2)
-    plt.plot(data['Interval'], data['Crossings'], label='Crossings', marker='x')
-    plt.xlabel('Interval')
-    plt.ylabel('Count')
-    plt.title('Crossings Over Time')
-    plt.legend()
-    plt.grid(True)
-
-    plt.subplot(3, 1, 3)
-    plt.plot(data['Interval'], data['Rewards'], label='Rewards', marker='s')
-    plt.xlabel('Interval')
-    plt.ylabel('Rewards')
-    plt.title('Rewards Over Time')
-    plt.legend()
-    plt.grid(True)
-
-    plt.tight_layout()
-    plt.savefig('simulation_plot.png')
-    plt.show()
-
-plt.ion()  # Turn on interactive mode
-
-fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 12))
+plt.ion() 
+fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 15))
 collision_line, = ax1.plot([], [], label='Collisions', marker='o')
 crossing_line, = ax2.plot([], [], label='Crossings', marker='x')
 reward_line, = ax3.plot([], [], label='Rewards', marker='s')
 
 def initialize_plot():
-    global collision_line, crossing_line, reward_line
-    
     ax1.set_xlabel('Interval')
     ax1.set_ylabel('Count')
     ax1.set_title('Collisions Over Time')
@@ -146,25 +95,31 @@ def initialize_plot():
     ax3.grid(True)
     
     plt.tight_layout()
-    fig.canvas.draw()
-    plt.pause(0.001)
 
-def update_plot():
-    global collision_line, crossing_line, reward_line, ax1, ax2, ax3, fig
-    
+def update_plot(collision_records, intersection_records, reward_records):
     collision_line.set_data(range(1, len(collision_records) + 1), collision_records)
     crossing_line.set_data(range(1, len(intersection_records) + 1), intersection_records)
     reward_line.set_data(range(1, len(reward_records) + 1), reward_records)
     
-    ax1.relim()
-    ax1.autoscale_view()
-    ax2.relim()
-    ax2.autoscale_view()
-    ax3.relim()
-    ax3.autoscale_view()
+    for ax in (ax1, ax2, ax3):
+        ax.relim()
+        ax.autoscale_view()
     
     fig.canvas.draw()
     fig.canvas.flush_events()
+
+def save_and_plot_data(collision_records, intersection_records, reward_records):
+    # Save to CSV
+    data = pd.DataFrame({
+        'Interval': range(1, len(collision_records) + 1),
+        'Collisions': collision_records,
+        'Crossings': intersection_records,
+        'Rewards': reward_records
+    })
+    data.to_csv('simulation_data.csv', index=False)
+
+    # Update the plot
+    update_plot(collision_records, intersection_records, reward_records)
 
 def update_parameters(config, agent):
     state = np.zeros(8)  # Assuming state is a vector of 8 zeros for simplicity
@@ -207,7 +162,7 @@ def run_simulation(config, agent):
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 40005:  
+        if elapsed_time > 60003:  
             running = False
 
         if interval_elapsed_time >= 20000:
@@ -255,8 +210,8 @@ def run_simulation(config, agent):
 
         # Display parameters and stats
         font = pygame.font.Font(None, 16)  
-        collision_font = pygame.font.Font(None, 32) 
-        interval_font = pygame.font.Font(None, 32)
+        collision_font = pygame.font.Font(None, 26) 
+        interval_font = pygame.font.Font(None, 26)
 
         params = config.get_parameters()
         params_text = [
@@ -272,10 +227,10 @@ def run_simulation(config, agent):
             screen.blit(param_surface, (10, 10 + idx * 20))  
 
         collisions_text = collision_font.render(f"Collisions: {count_collisions()}", True, (255, 0, 0))
-        screen.blit(collisions_text, (350, 10)) 
+        screen.blit(collisions_text, (340, 10)) 
 
         crossings_text = collision_font.render(f"Crossings: {total_crossings}", True, (0, 0, 255))
-        screen.blit(crossings_text, (350, 50))
+        screen.blit(crossings_text, (340, 35))
 
         interval_text = interval_font.render(f"{interval_count}", True, (80, 80, 80))
         screen.blit(interval_text, (20, SCREEN_HEIGHT - 50))
@@ -302,9 +257,6 @@ def run_simulation(config, agent):
             for car2 in cars[j+1:]:
                 if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 15):
                     add_collision(car1, car2)
-
-        if i % 3000 == 0:  # Update plot every 30 frames
-            update_plot()
 
         pygame.display.flip()
         clock.tick(144)
