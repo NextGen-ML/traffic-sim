@@ -33,7 +33,7 @@ class PolicyGradientAgent:
     def __init__(self, env, entropy_coeff=0.01):
         self.env = env
         self.policy_net = PolicyNetwork(env.observation_space.shape[0], env.action_space.shape[0])
-        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=0.0003)
+        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=0.003)
         self.episode_log_probs = []
         self.episode_rewards = []
         self.entropy_coeff = entropy_coeff
@@ -63,7 +63,7 @@ class PolicyGradientAgent:
         returns = []
 
         for r in self.episode_rewards[::-1]:
-            R = r + 0.99 * R
+            R = r + 0.4 * R
             returns.insert(0, R)
 
         returns = torch.tensor(returns)

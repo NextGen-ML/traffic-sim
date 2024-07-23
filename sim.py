@@ -172,10 +172,10 @@ def run_simulation(config, agent):
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 30003:  
+        if elapsed_time > 80003:  
             running = False
 
-        if interval_elapsed_time >= 10000:
+        if interval_elapsed_time >= 20000:
             interval_count += 1
             end_collisions = count_collisions()
             interval_collisions = end_collisions - start_collisions
@@ -186,7 +186,7 @@ def run_simulation(config, agent):
             collision_records.append(interval_collisions)
             intersection_records.append(interval_crossings)
             
-            reward = interval_crossings - interval_collisions * 100
+            reward = interval_crossings - interval_collisions * 500
             reward_records.append(reward)
             
             start_collisions = end_collisions
@@ -194,14 +194,14 @@ def run_simulation(config, agent):
             interval_start_time = current_time
             is_first_interval = False  # Set to False after the first interval
             state = np.array([
-                collision_records[-1] if collision_records else 0,
-                intersection_records[-1] if intersection_records else 0,
+                # collision_records[-1] if collision_records else 0,
+                # intersection_records[-1] if intersection_records else 0,
                 bottom_top_next_interval,
                 left_right_next_interval,
-                len(four_way.motion_path_array),
-                four_way.number_of_roads,
-                four_way.size[0],
-                four_way.size[1],
+                # len(four_way.motion_path_array),
+                # four_way.number_of_roads,
+                # four_way.size[0],
+                # four_way.size[1],
                 1 if is_first_interval else 0,
             ])
             action = agent.select_action(state)

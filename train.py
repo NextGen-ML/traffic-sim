@@ -11,24 +11,7 @@ def train_agent(agent, env, num_episodes):
         state = env.reset()
         done = False
         total_reward = 0
-
-        # try:
-        #     while not done:
-        #         action = agent.select_action(state)
-        #         next_state, reward, done, _ = env.step(action)
-        #         agent.episode_rewards.append(reward)
-        #         state = next_state
-        #         total_reward += reward
-
-        #         if done:  # Check if the episode is done after each interval
-        #             agent.update_policy()  # Update policy after the interval
-        #             print("updated")
-
-        #     print(f"Episode {episode + 1}: Total Reward: {total_reward}")
-
-        #     # Update the plot after each episode
-        #     save_and_plot_data()
-
+        
         try:
             action = agent.select_action(state)
             next_state, reward, done, _ = env.step(action)

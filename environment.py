@@ -24,7 +24,7 @@ class IntersectionEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0,
             high=np.inf,
-            shape=(9,),
+            shape=(3,),
             dtype=np.float32
         )
         self.collision_records = []
@@ -78,14 +78,14 @@ class IntersectionEnv(gym.Env):
 
     def _get_state(self, is_first_interval=False, bottom_top_next_interval=0, left_right_next_interval=0):
         state = np.array([
-            np.mean(self.collision_records[-1]) if len(self.collision_records) >= 1 else 0,
-            np.mean(self.intersection_records[-1]) if len(self.intersection_records) >= 1 else 0,
-            bottom_top_next_interval,  # Add current interval values
-            left_right_next_interval,  # Add current interval values
-            len(self.intersection.motion_path_array),
-            self.intersection.number_of_roads,
-            self.intersection.size[0],
-            self.intersection.size[1],
+            # np.mean(self.collision_records[-1]) if len(self.collision_records) >= 1 else 0,
+            # np.mean(self.intersection_records[-1]) if len(self.intersection_records) >= 1 else 0,
+            bottom_top_next_interval, 
+            left_right_next_interval, 
+            # len(self.intersection.motion_path_array),
+            # self.intersection.number_of_roads,
+            # self.intersection.size[0],
+            # self.intersection.size[1],
             1 if is_first_interval else 0  # Add the first interval flag
         ], dtype=np.float32)
 
