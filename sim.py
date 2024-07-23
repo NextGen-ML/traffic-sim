@@ -9,6 +9,7 @@ import sys
 import numpy as np
 import threading
 from matplotlib.animation import FuncAnimation
+from intersection import Intersection
 
 total_crossings = 0
 crossed_cars = set()
@@ -18,6 +19,15 @@ collision_records = []
 intersection_records = []  
 reward_records = []  
 interval_count = 0
+
+
+# Define intersection
+four_way = Intersection(
+    motion_path_array=[Paths.TOP_BOTTOM, Paths.BOTTOM_TOP, Paths.LEFT_RIGHT, Paths.RIGHT_LEFT],
+    number_of_roads=4,
+    starting_positions=[StartingPos.BOTTOM, StartingPos.TOP, StartingPos.LEFT, StartingPos.RIGHT],
+    size=(100, 100)
+)
 
 def is_close_to(x1, y1, x2, y2, tolerance):
     dist = abs((((x2-x1)**2) + ((y2-y1)**2)) ** 0.5)
@@ -36,7 +46,6 @@ def return_car(path, config):
 
 def add_collision(car1, car2):
     if (car1.id, car2.id) not in collisions:
-        # print("💥COLLISION")
         collisions[(car1.id, car2.id)] = True
 
 def count_collisions():
@@ -121,9 +130,7 @@ def save_and_plot_data():
     # Update the plot
     update_plot(collision_records, intersection_records, reward_records)
 
-def update_parameters(config, agent):
-    state = np.zeros(8)  # Assuming state is a vector of 8 zeros for simplicity
-    action = agent.select_action(state)  # Use the agent to select an action based on the current state
+def update_parameters(config, action):
     max_velocity, acceleration, collision_distance, wait_time, distance_between_cars = action
     config.update_parameters(
         max_velocity=max_velocity,
@@ -157,17 +164,18 @@ def run_simulation(config, agent):
 
     i = 0
     interval_results = []
-    is_first_interval = True  # Add this flag
+    is_first_interval = True
+    last_parameter_update = start_time
 
     while running:
         current_time = pygame.time.get_ticks()
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 100003:  
+        if elapsed_time > 30003:  
             running = False
 
-        if interval_elapsed_time >= 20000:
+        if interval_elapsed_time >= 10000:
             interval_count += 1
             end_collisions = count_collisions()
             interval_collisions = end_collisions - start_collisions
@@ -185,6 +193,19 @@ def run_simulation(config, agent):
             interval_crossings = 0
             interval_start_time = current_time
             is_first_interval = False  # Set to False after the first interval
+            state = np.array([
+                collision_records[-1] if collision_records else 0,
+                intersection_records[-1] if intersection_records else 0,
+                bottom_top_next_interval,
+                left_right_next_interval,
+                len(four_way.motion_path_array),
+                four_way.number_of_roads,
+                four_way.size[0],
+                four_way.size[1],
+                1 if is_first_interval else 0,
+            ])
+            action = agent.select_action(state)
+            update_parameters(config, action)
 
         # Generate cars
         if i % bottom_top_next_interval == 0:

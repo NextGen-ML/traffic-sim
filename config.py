@@ -50,18 +50,12 @@ class Config:
         self.WAIT_TIME = 4
         self.DISTANCE_BETWEEN_CARS = 20
 
-    # For changing the parameters using our reinforcement learning model
     def update_parameters(self, max_velocity=None, acceleration=None, collision_distance=None, wait_time=None, distance_between_cars=None):
-        if max_velocity is not None:
-            self.MAX_VELOCITY = max_velocity
-        if acceleration is not None:
-            self.ACCELERATION = acceleration
-        if collision_distance is not None:
-            self.COLLISION_DISTANCE = collision_distance
-        if wait_time is not None:
-            self.WAIT_TIME = wait_time
-        if distance_between_cars is not None:
-            self.DISTANCE_BETWEEN_CARS = distance_between_cars
+        self.MAX_VELOCITY = max_velocity if max_velocity is not None else self.MAX_VELOCITY
+        self.ACCELERATION = acceleration if acceleration is not None else self.ACCELERATION
+        self.COLLISION_DISTANCE = collision_distance if collision_distance is not None else self.COLLISION_DISTANCE
+        self.WAIT_TIME = wait_time if wait_time is not None else self.WAIT_TIME
+        self.DISTANCE_BETWEEN_CARS = distance_between_cars if distance_between_cars is not None else self.DISTANCE_BETWEEN_CARS
 
     def get_parameters(self):
         return {

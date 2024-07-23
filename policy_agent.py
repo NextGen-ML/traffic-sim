@@ -30,7 +30,7 @@ class PolicyNetwork(nn.Module):
         return mu, std
 
 class PolicyGradientAgent:
-    def __init__(self, env, entropy_coeff=1):
+    def __init__(self, env, entropy_coeff=0.01):
         self.env = env
         self.policy_net = PolicyNetwork(env.observation_space.shape[0], env.action_space.shape[0])
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=0.0003)
@@ -41,8 +41,6 @@ class PolicyGradientAgent:
     def select_action(self, state):
         state = torch.FloatTensor(state).unsqueeze(0)
         mu, std = self.policy_net(state)
-        if torch.isnan(mu).any() or torch.isnan(std).any():
-            raise ValueError("NaN values in mu or std of the policy network.")
         dist = Normal(mu, std)
         action = dist.sample()
         log_prob = dist.log_prob(action).sum(dim=-1)
@@ -54,10 +52,10 @@ class PolicyGradientAgent:
         high = self.env.action_space.high
         scaled_action = low + (0.5 * (action + 1.0) * (high - low))
         
-        # Debugging information
-        print(f"mu: {mu.detach().numpy()}, std: {std.detach().numpy()}, action: {action}, scaled_action: {scaled_action}")
-
-        return scaled_action
+        # Clip the scaled action to ensure it's within the action space
+        clipped_action = np.clip(scaled_action, low, high)
+        
+        return clipped_action
 
     def update_policy(self):
         R = 0

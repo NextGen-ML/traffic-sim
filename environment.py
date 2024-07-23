@@ -24,7 +24,7 @@ class IntersectionEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0,
             high=np.inf,
-            shape=(11,),  # Adjusted the shape to 11
+            shape=(9,),
             dtype=np.float32
         )
         self.collision_records = []
@@ -35,7 +35,15 @@ class IntersectionEnv(gym.Env):
         self.collision_records = []
         self.intersection_records = []
         self.reward_records = []
-        self.config.update_parameters()
+        # Instead of calling update_parameters() without arguments,
+        # let's reset to default values or use the current values
+        self.config.update_parameters(
+            max_velocity=self.config.MAX_VELOCITY,
+            acceleration=self.config.ACCELERATION,
+            collision_distance=self.config.COLLISION_DISTANCE,
+            wait_time=self.config.WAIT_TIME,
+            distance_between_cars=self.config.DISTANCE_BETWEEN_CARS
+        )
         self.bottom_top_interval = 50
         self.left_right_interval = 50
         return self._get_state(is_first_interval=True)
@@ -70,10 +78,8 @@ class IntersectionEnv(gym.Env):
 
     def _get_state(self, is_first_interval=False, bottom_top_next_interval=0, left_right_next_interval=0):
         state = np.array([
-            self.collision_records[-1] if self.collision_records else 0,
-            self.intersection_records[-1] if self.intersection_records else 0,
-            self.bottom_top_next_interval,
-            self.left_right_next_interval,
+            np.mean(self.collision_records[-1]) if len(self.collision_records) >= 1 else 0,
+            np.mean(self.intersection_records[-1]) if len(self.intersection_records) >= 1 else 0,
             bottom_top_next_interval,  # Add current interval values
             left_right_next_interval,  # Add current interval values
             len(self.intersection.motion_path_array),
@@ -84,7 +90,7 @@ class IntersectionEnv(gym.Env):
         ], dtype=np.float32)
 
         # Print original state values
-        print("Original state values:", state)
+        # print("Original state values:", state)
 
         state_mean = np.mean(state)
         state_std = np.std(state) + 1e-8  # Avoid division by zero
