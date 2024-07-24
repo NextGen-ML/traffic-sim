@@ -1,3 +1,4 @@
+# sim.py
 import pygame
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -13,6 +14,7 @@ from intersection import Intersection
 from policy_agent import PolicyGradientAgent
 from config import Config
 from helper_functions import set_seed
+import time
 
 total_crossings = 0
 crossed_cars = set()
@@ -195,14 +197,42 @@ def run_simulation(config, agent):
             collision_records.append(interval_collisions)
             intersection_records.append(interval_crossings)
             
-            reward = interval_crossings - interval_collisions * 200
-            reward = max(min(reward, 100), -2500)  # Clipping rewards to be between -1000 and 1000
+            reward = interval_crossings - interval_collisions * 150
+            
+            # Add penalty for long queue wait times
+            max_wait_time = 10 
+            penalty = 0
+            wait_times = {}
+            for car in cars:
+                if car.queue:
+                    car_wait_times = car.queue.get_wait_times()
+                    for path, wait_time in car_wait_times.items():
+                        if path not in wait_times:
+                            wait_times[path] = wait_time
+                        else:
+                            wait_times[path] = max(wait_times[path], wait_time)
+
+            if len(wait_times) > 1:
+                highest_wait_time = max(wait_times.values())
+                print(highest_wait_time)
+                if highest_wait_time > max_wait_time:
+                    penalty = 25
+                    print("penalty added")
+
+            reward -= penalty
+            reward = max(min(reward, 150), -1500) 
+            
             reward_records.append(reward)
             
             start_collisions = end_collisions
             interval_crossings = 0
             interval_start_time = current_time
             is_first_interval = False  
+
+            # Reset wait times for each queue after the interval
+            for car in cars:
+                if car.queue:
+                    car.queue.reset_wait_times()
 
             last_collisions = interval_collisions
             last_crossings = interval_crossings

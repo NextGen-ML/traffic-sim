@@ -1,3 +1,4 @@
+# car_queue.py
 import threading
 import time
 from config import *
@@ -5,10 +6,11 @@ from config import *
 class CarQueue:
     def __init__(self, host_car, config):
         self.host_car = host_car
-        self.config = config  # Store the config instance
+        self.config = config
         self.motion_path_queue = {host_car.path: [host_car]}
         self.lock = threading.Lock()
         self.active = True
+        self.queue_start_time = {host_car.path: time.time()}  # Track when the queue started waiting
         self.thread = threading.Thread(target=self.run_queue_management)
         self.thread.start()
 
@@ -22,20 +24,17 @@ class CarQueue:
                     self.motion_path_queue[get_partner_path(car.path)].append(car)
                 else:
                     self.motion_path_queue[car.path] = [car]
+                    self.queue_start_time[car.path] = time.time()  # Start the timer when a car joins an empty queue
                 car.queue = self
 
     def update_queue(self, i):
         with self.lock:
-            current_top_path = next(iter(self.motion_path_queue)) if self.motion_path_queue else None
             for path, cars in list(self.motion_path_queue.items()):
                 self.motion_path_queue[path] = [car for car in cars if not car.has_crossed_intersection() or not car.at_border()]
-                
-                for car in self.motion_path_queue[path]:
-                    if is_partner_path(car.path, self.host_car.path):
-                        car.row = True
 
                 if len(self.motion_path_queue[path]) == 0:
                     del self.motion_path_queue[path]
+                    del self.queue_start_time[path]  # Reset the timer when the queue becomes empty
 
             self.check_host_car()
 
@@ -46,7 +45,7 @@ class CarQueue:
 
     def run_queue_management(self):
         while self.active:
-            time.sleep(float(self.config.WAIT_TIME))  # Convert numpy.float32 to Python float
+            time.sleep(float(self.config.WAIT_TIME))
             self.reorder_queue()
 
     def reorder_queue(self):
@@ -55,7 +54,7 @@ class CarQueue:
                 first_path, first_cars = next(iter(self.motion_path_queue.items()))
                 del self.motion_path_queue[first_path]
                 self.motion_path_queue[first_path] = first_cars
-                
+
                 self.update_host_car()
 
     def update_host_car(self):
@@ -71,3 +70,13 @@ class CarQueue:
             self.active = False
             if self.thread.is_alive():
                 self.thread.join()
+
+    def get_wait_times(self):
+        with self.lock:
+            current_time = time.time()
+            wait_times = {path: current_time - self.queue_start_time[path] for path in self.queue_start_time}
+        return wait_times
+
+    def reset_wait_times(self):
+        with self.lock:
+            self.queue_start_time = {path: time.time() for path in self.queue_start_time}
