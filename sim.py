@@ -10,6 +10,9 @@ import numpy as np
 import threading
 from matplotlib.animation import FuncAnimation
 from intersection import Intersection
+from policy_agent import PolicyGradientAgent
+from config import Config
+from helper_functions import set_seed
 
 total_crossings = 0
 crossed_cars = set()
@@ -20,6 +23,9 @@ intersection_records = []
 reward_records = []  
 interval_count = 0
 
+# Set the seed for reproducibility
+seed = 43
+set_seed(seed)
 
 # Define intersection
 four_way = Intersection(
@@ -153,8 +159,8 @@ def run_simulation(config, agent):
     initialize_plot()
 
     cars = []
-    bottom_top_interval = 50
-    left_right_interval = 50
+    bottom_top_interval = 75
+    left_right_interval = 75
     bottom_top_next_interval = bottom_top_interval + randint(-10, 10)
     left_right_next_interval = left_right_interval + randint(-10, 10)
 
@@ -167,15 +173,18 @@ def run_simulation(config, agent):
     is_first_interval = True
     last_parameter_update = start_time
 
+    last_collisions = 0
+    last_crossings = 0
+
     while running:
         current_time = pygame.time.get_ticks()
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 80003:  
+        if elapsed_time > 75003:  
             running = False
 
-        if interval_elapsed_time >= 20000:
+        if interval_elapsed_time >= 15000:
             interval_count += 1
             end_collisions = count_collisions()
             interval_collisions = end_collisions - start_collisions
@@ -186,26 +195,32 @@ def run_simulation(config, agent):
             collision_records.append(interval_collisions)
             intersection_records.append(interval_crossings)
             
-            reward = interval_crossings - interval_collisions * 500
+            reward = interval_crossings - interval_collisions * 200
+            reward = max(min(reward, 100), -2500)  # Clipping rewards to be between -1000 and 1000
             reward_records.append(reward)
             
             start_collisions = end_collisions
             interval_crossings = 0
             interval_start_time = current_time
-            is_first_interval = False  # Set to False after the first interval
+            is_first_interval = False  
+
+            last_collisions = interval_collisions
+            last_crossings = interval_crossings
+
             state = np.array([
-                # collision_records[-1] if collision_records else 0,
-                # intersection_records[-1] if intersection_records else 0,
                 bottom_top_next_interval,
                 left_right_next_interval,
-                # len(four_way.motion_path_array),
-                # four_way.number_of_roads,
-                # four_way.size[0],
-                # four_way.size[1],
                 1 if is_first_interval else 0,
+                last_collisions,  
+                last_crossings    
             ])
+            print(f"Last Collisions {last_collisions}")
             action = agent.select_action(state)
             update_parameters(config, action)
+
+            # Store the reward obtained in this interval
+            agent.store_reward(reward)
+            print(f"Interval {interval_count} - Reward Stored")
 
         # Generate cars
         if i % bottom_top_next_interval == 0:
@@ -288,6 +303,10 @@ def run_simulation(config, agent):
 
     pygame.quit()
 
+    # Update the policy at the end of the episode
+    agent.update_policy()
+    print("Episode - Policy Updated")
+
     for idx, (collisions, crossings, first_interval, bottom_top_next_interval, left_right_next_interval) in enumerate(interval_results):
         print(f"Interval {idx + 1}: Collisions: {collisions}, Crossings: {crossings}, First Interval: {first_interval}, Bottom-Top Interval: {bottom_top_next_interval}, Left-Right Interval: {left_right_next_interval}")
 
@@ -296,11 +315,11 @@ def run_simulation(config, agent):
     return interval_results, bottom_top_next_interval, left_right_next_interval
 
 if __name__ == "__main__":
-    from policy_agent import PolicyGradientAgent
-    from environment import IntersectionEnv, four_way
-    from config import Config
-    
+    set_seed(seed) 
+
     config = Config()
+    from environment import IntersectionEnv
+    
     env = IntersectionEnv(config, four_way, None)
     agent = PolicyGradientAgent(env)
     env.agent = agent

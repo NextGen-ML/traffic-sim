@@ -11,20 +11,20 @@ class IntersectionEnv(gym.Env):
         self.config = config
         self.intersection = intersection
         self.agent = agent
-        self.bottom_top_interval = 50
-        self.left_right_interval = 50
+        self.bottom_top_interval = 75
+        self.left_right_interval = 75
         self.bottom_top_next_interval = self.bottom_top_interval + np.random.randint(-10, 10)
         self.left_right_next_interval = self.left_right_interval + np.random.randint(-10, 10)
 
         self.action_space = spaces.Box(
-            low=np.array([50, 25, 20, 2, 10]),
-            high=np.array([250, 150, 50, 10, 75]),
+            low=np.array([50, 25, 25, 2, 10]),
+            high=np.array([250, 150, 100, 15, 75]),
             dtype=np.float32
         )
         self.observation_space = spaces.Box(
             low=0,
             high=np.inf,
-            shape=(3,),
+            shape=(5,),
             dtype=np.float32
         )
         self.collision_records = []
@@ -58,9 +58,9 @@ class IntersectionEnv(gym.Env):
             wait_time=wait_time,
             distance_between_cars=distance_between_cars
         )
-        
+
         interval_results, self.bottom_top_next_interval, self.left_right_next_interval = run_simulation(self.config, self.agent)
-    
+        
         total_crossings = 0
         total_collisions = 0
         for interval_collisions, interval_crossings, is_first_interval, bottom_top_next_interval, left_right_next_interval in interval_results:
@@ -69,28 +69,27 @@ class IntersectionEnv(gym.Env):
             total_crossings += interval_crossings
             total_collisions += interval_collisions
 
-        reward = total_crossings - total_collisions * 500
+        reward = total_crossings - total_collisions * 200
+        reward = max(min(reward, 10), -1000)
         self.reward_records.append(reward)
-        obs = self._get_state(is_first_interval, bottom_top_next_interval, left_right_next_interval)
+
+        # Get the last interval's collision and crossing counts
+        last_collisions = interval_results[-1][0] if interval_results else 0
+        last_crossings = interval_results[-1][1] if interval_results else 0
+
+        obs = self._get_state(is_first_interval, bottom_top_next_interval, left_right_next_interval, last_collisions, last_crossings)
         done = len(self.collision_records) >= 3
 
         return obs, reward, done, {}
 
-    def _get_state(self, is_first_interval=False, bottom_top_next_interval=0, left_right_next_interval=0):
+    def _get_state(self, is_first_interval=False, bottom_top_next_interval=0, left_right_next_interval=0, last_collisions=0, last_crossings=0):
         state = np.array([
-            # np.mean(self.collision_records[-1]) if len(self.collision_records) >= 1 else 0,
-            # np.mean(self.intersection_records[-1]) if len(self.intersection_records) >= 1 else 0,
-            bottom_top_next_interval, 
-            left_right_next_interval, 
-            # len(self.intersection.motion_path_array),
-            # self.intersection.number_of_roads,
-            # self.intersection.size[0],
-            # self.intersection.size[1],
-            1 if is_first_interval else 0  # Add the first interval flag
+            bottom_top_next_interval,
+            left_right_next_interval,
+            1 if is_first_interval else 0,
+            last_collisions,   
+            last_crossings     
         ], dtype=np.float32)
-
-        # Print original state values
-        # print("Original state values:", state)
 
         state_mean = np.mean(state)
         state_std = np.std(state) + 1e-8  # Avoid division by zero

@@ -3,6 +3,10 @@ from environment import IntersectionEnv, four_way
 from config import Config
 from sim import initialize_plot, update_plot, save_and_plot_data
 import matplotlib.pyplot as plt
+from helper_functions import set_seed
+
+seed = 43
+set_seed(seed)
 
 def train_agent(agent, env, num_episodes):
     initialize_plot()
@@ -12,33 +16,24 @@ def train_agent(agent, env, num_episodes):
         done = False
         total_reward = 0
         
-        try:
+        while not done:
             action = agent.select_action(state)
             next_state, reward, done, _ = env.step(action)
-            agent.episode_rewards.append(reward)
             state = next_state
             total_reward += reward
 
-            agent.update_policy()  # Update policy after the interval
-            print("updated")
-
             print(f"Episode {episode + 1}: Total Reward: {total_reward}")
 
-            # Update the plot after each episode
-            save_and_plot_data()
+        # Update the plot after each episode
+        save_and_plot_data()
 
-        except ValueError as e:
-            print(f"Error in episode {episode + 1}: {str(e)}")
-            print(f"Current state: {state}")
-            break
-
-    plt.ioff()  
+    plt.ioff()
     plt.show()
 
 if __name__ == "__main__":
     config = Config()
     env = IntersectionEnv(config, four_way, None)
-    agent = PolicyGradientAgent(env)  
-    env.agent = agent 
+    agent = PolicyGradientAgent(env)
+    env.agent = agent
 
     train_agent(agent, env, num_episodes=1000)

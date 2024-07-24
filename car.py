@@ -148,7 +148,7 @@ class Car:
         desired_velocity = self.vel  
         comfortable_braking_acceleration = 1.5  
         minimum_spacing = self.config.DISTANCE_BETWEEN_CARS 
-        time_headway = 1.5  
+        time_headway = 1.5 
 
         velocity = self.vy if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM] else self.vx
         delta_velocity = velocity - (car_ahead.vy if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM] else car_ahead.vx)
@@ -169,7 +169,7 @@ class Car:
         if abs(self.ax) > self.config.ACCELERATION:
             self.ax = self.config.ACCELERATION if self.ax > 0 else -self.config.ACCELERATION
 
-    def update(self, cars, i, speed_factor=1.5):
+    def update(self, cars, i, speed_factor=1):
         self.get_cars(cars)
         self.update_parameters()
         

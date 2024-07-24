@@ -3,18 +3,14 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.distributions import Normal
-from environment import IntersectionEnv, four_way
-from config import Config
 import numpy as np
 
 class PolicyNetwork(nn.Module):
     def __init__(self, input_size, output_size):
         super(PolicyNetwork, self).__init__()
-        self.fc1 = nn.Linear(input_size, 128)
-        self.ln1 = nn.LayerNorm(128)
-        self.fc2 = nn.Linear(128, 128)
-        self.ln2 = nn.LayerNorm(128)
-        self.fc3 = nn.Linear(128, output_size)
+        self.fc1 = nn.Linear(input_size, 128) 
+        self.fc2 = nn.Linear(128, 64)  
+        self.fc3 = nn.Linear(64, output_size)
         self.log_std = nn.Parameter(torch.zeros(output_size))
         
         # Initialize weights
@@ -23,20 +19,22 @@ class PolicyNetwork(nn.Module):
         nn.init.xavier_uniform_(self.fc3.weight)
 
     def forward(self, x):
-        x = F.elu(self.ln1(self.fc1(x)))
-        x = F.elu(self.ln2(self.fc2(x)))
-        mu = F.tanh(self.fc3(x))
+        x = F.relu(self.fc1(x)) 
+        x = F.relu(self.fc2(x))  
+        mu = F.tanh(self.fc3(x)) * 2 
         std = F.softplus(self.log_std).expand_as(mu)
         return mu, std
 
 class PolicyGradientAgent:
-    def __init__(self, env, entropy_coeff=0.01):
+    def __init__(self, env, entropy_coeff=0.01, gamma=0.5, learning_rate=0.0005):
         self.env = env
         self.policy_net = PolicyNetwork(env.observation_space.shape[0], env.action_space.shape[0])
-        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=0.003)
+        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)
+        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=15, gamma=0.5)
         self.episode_log_probs = []
-        self.episode_rewards = []
         self.entropy_coeff = entropy_coeff
+        self.gamma = gamma
+        self.rewards = []
 
     def select_action(self, state):
         state = torch.FloatTensor(state).unsqueeze(0)
@@ -44,17 +42,13 @@ class PolicyGradientAgent:
         dist = Normal(mu, std)
         action = dist.sample()
         log_prob = dist.log_prob(action).sum(dim=-1)
-        self.episode_log_probs.append((log_prob, dist.entropy().sum(dim=-1)))
-        
-        # Scale the action from [-1, 1] to the action space range
+        entropy = dist.entropy().sum(dim=-1)
+        self.episode_log_probs.append((log_prob, entropy))
         action = action.squeeze(0).detach().numpy()
         low = self.env.action_space.low
         high = self.env.action_space.high
         scaled_action = low + (0.5 * (action + 1.0) * (high - low))
-        
-        # Clip the scaled action to ensure it's within the action space
         clipped_action = np.clip(scaled_action, low, high)
-        
         return clipped_action
 
     def update_policy(self):
@@ -62,8 +56,9 @@ class PolicyGradientAgent:
         policy_loss = []
         returns = []
 
-        for r in self.episode_rewards[::-1]:
-            R = r + 0.4 * R
+        # Calculate the discounted returns
+        for r in self.rewards[::-1]:
+            R = r + self.gamma * R
             returns.insert(0, R)
 
         returns = torch.tensor(returns)
@@ -76,6 +71,11 @@ class PolicyGradientAgent:
         policy_loss.backward()
         torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1.0)
         self.optimizer.step()
+        self.scheduler.step()
 
+        # Clear interval data after update
         self.episode_log_probs = []
-        self.episode_rewards = []
+        self.rewards = []
+
+    def store_reward(self, reward):
+        self.rewards.append(reward)
