@@ -8,20 +8,17 @@ import numpy as np
 class PolicyNetwork(nn.Module):
     def __init__(self, input_size, output_size):
         super(PolicyNetwork, self).__init__()
-        self.fc1 = nn.Linear(input_size, 128) 
-        self.fc2 = nn.Linear(128, 64)  
-        self.fc3 = nn.Linear(64, output_size)
+        self.fc1 = nn.Linear(input_size, 64)  # Reduced number of neurons
+        self.fc2 = nn.Linear(64, output_size)
         self.log_std = nn.Parameter(torch.zeros(output_size))
         
         # Initialize weights
         nn.init.xavier_uniform_(self.fc1.weight)
         nn.init.xavier_uniform_(self.fc2.weight)
-        nn.init.xavier_uniform_(self.fc3.weight)
 
     def forward(self, x):
         x = F.relu(self.fc1(x)) 
-        x = F.relu(self.fc2(x))  
-        mu = F.tanh(self.fc3(x)) * 2 
+        mu = F.tanh(self.fc2(x)) * 2 
         std = F.softplus(self.log_std).expand_as(mu)
         return mu, std
 

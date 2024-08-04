@@ -14,6 +14,9 @@ from policy_agent import PolicyGradientAgent
 from config import Config
 from helper_functions import set_seed
 
+MAX_CARS_PER_DIRECTION = 7
+MAX_TOTAL_CARS = 12
+
 total_crossings = 0
 crossed_cars = set()
 
@@ -51,8 +54,11 @@ def return_car(path, config):
     return None
 
 def add_collision(car1, car2):
+    if car1.spawned_recently() or car2.spawned_recently():
+        return  # Ignore collisions for newly spawned cars
     if (car1.id, car2.id) not in collisions:
         collisions[(car1.id, car2.id)] = True
+
 
 def count_collisions():
     global collisions
@@ -66,23 +72,30 @@ def count_crossed_intersections(cars):
     return sum(1 for car in cars if car.crossed_intersection)
 
 def can_create(car_list, path):
-    can = True
-    if car_list != []:
-        for car in car_list:
-            if car.path == path:
-                if path == Paths.TOP_BOTTOM:
-                    if is_close_to(car.x_pos, car.y_pos, (SCREEN_WIDTH / 2) - 8, RENDER_BORDER, 10):
-                        can = False
-                elif path == Paths.BOTTOM_TOP:
-                    if is_close_to(car.x_pos, car.y_pos, (SCREEN_WIDTH / 2) + 8, SCREEN_HEIGHT - RENDER_BORDER, 10):
-                        can = False
-                elif path == Paths.LEFT_RIGHT:
-                    if is_close_to(car.x_pos, car.y_pos, RENDER_BORDER, (SCREEN_HEIGHT / 2) + 8, 10):
-                        can = False
-                elif path == Paths.RIGHT_LEFT:
-                    if is_close_to(car.x_pos, car.y_pos, SCREEN_WIDTH - RENDER_BORDER, (SCREEN_HEIGHT / 2) - 8, 2):
-                        can = False
-    return can
+    if len(car_list) >= MAX_TOTAL_CARS:
+        return False
+
+    # Count cars in the same direction
+    cars_in_same_direction = sum(1 for car in car_list if car.path == path)
+    if cars_in_same_direction >= MAX_CARS_PER_DIRECTION:
+        return False
+
+    # Check if there's a car too close to the spawn location
+    for car in car_list:
+        if car.path == path:
+            if path == Paths.TOP_BOTTOM:
+                if is_close_to(car.x_pos, car.y_pos, (SCREEN_WIDTH / 2) - 8, RENDER_BORDER, 10):
+                    return False
+            elif path == Paths.BOTTOM_TOP:
+                if is_close_to(car.x_pos, car.y_pos, (SCREEN_WIDTH / 2) + 8, SCREEN_HEIGHT - RENDER_BORDER, 10):
+                    return False
+            elif path == Paths.LEFT_RIGHT:
+                if is_close_to(car.x_pos, car.y_pos, RENDER_BORDER, (SCREEN_HEIGHT / 2) + 8, 10):
+                    return False
+            elif path == Paths.RIGHT_LEFT:
+                if is_close_to(car.x_pos, car.y_pos, SCREEN_WIDTH - RENDER_BORDER, (SCREEN_HEIGHT / 2) - 8, 10):
+                    return False
+    return True
 
 plt.ion() 
 fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 15))
@@ -195,8 +208,8 @@ def run_simulation(config, agent):
             collision_records.append(interval_collisions)
             intersection_records.append(interval_crossings)
             
-            reward = interval_crossings - interval_collisions * 200
-            reward = max(min(reward, 100), -2500)  # Clipping rewards to be between -1000 and 1000
+            reward = interval_crossings - interval_collisions * 100
+            reward = max(min(reward, 200), -2000)  # Clipping rewards to be between -1000 and 1000
             reward_records.append(reward)
             
             start_collisions = end_collisions
@@ -294,7 +307,7 @@ def run_simulation(config, agent):
         # Check for collisions
         for j, car1 in enumerate(cars):
             for car2 in cars[j+1:]:
-                if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 15):
+                if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 10):
                     add_collision(car1, car2)
 
         pygame.display.flip()

@@ -17,8 +17,8 @@ class IntersectionEnv(gym.Env):
         self.left_right_next_interval = self.left_right_interval + np.random.randint(-10, 10)
 
         self.action_space = spaces.Box(
-            low=np.array([50, 25, 25, 2, 10]),
-            high=np.array([250, 150, 100, 15, 75]),
+            low=np.array([50, 25, 10, 2, 10]),
+            high=np.array([200, 100, 50, 15, 75]),
             dtype=np.float32
         )
         self.observation_space = spaces.Box(
@@ -69,7 +69,7 @@ class IntersectionEnv(gym.Env):
             total_crossings += interval_crossings
             total_collisions += interval_collisions
 
-        reward = total_crossings - total_collisions * 200
+        reward = total_crossings - total_collisions * 100
         reward = max(min(reward, 10), -1000)
         self.reward_records.append(reward)
 
