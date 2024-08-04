@@ -70,7 +70,7 @@ class IntersectionEnv(gym.Env):
             total_collisions += interval_collisions
 
         reward = total_crossings - total_collisions * 100
-        reward = max(min(reward, 10), -1000)
+        reward = max(min(reward, 200), -750)
         self.reward_records.append(reward)
 
         # Get the last interval's collision and crossing counts

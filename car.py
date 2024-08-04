@@ -1,3 +1,5 @@
+import threading
+import time
 from config import *
 from car_queue import CarQueue
 
@@ -7,6 +9,7 @@ class Car:
         self.starting_pos = starting_pos
         self.x_pos = SCREEN_WIDTH / 2 
         self.y_pos = SCREEN_HEIGHT / 2
+        self.spawn_time = time.time()
 
         if starting_pos == StartingPos.BOTTOM:
             self.y_pos = (SCREEN_HEIGHT - RENDER_BORDER) - 3
@@ -63,7 +66,6 @@ class Car:
         return distance
     
     def will_collide(self, other_car, time_steps=100, time_interval=0.1):
-
         for step in range(time_steps):
             time = (step + 1) * time_interval
             my_future_x = self.x_pos + self.vx * time
@@ -143,6 +145,9 @@ class Car:
         elif self.path in [Paths.LEFT_RIGHT, Paths.RIGHT_LEFT]:
             distance = other_car.x_pos - self.x_pos
         return distance
+
+    def spawned_recently(self, threshold=1.0):
+        return (time.time() - self.spawn_time) < threshold
     
     def adjust_speed_to_maintain_gap(self, car_ahead):
         desired_velocity = self.vel  
@@ -263,7 +268,6 @@ class Car:
             
             if self.has_crossed_intersection() and not self.crossed_intersection:
                 self.crossed_intersection = True
-                # print(f"Car {self.id} crossed the intersection")
 
     def has_crossed_intersection(self):
         intersection_x = SCREEN_WIDTH / 2

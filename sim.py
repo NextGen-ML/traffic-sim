@@ -14,8 +14,8 @@ from policy_agent import PolicyGradientAgent
 from config import Config
 from helper_functions import set_seed
 
-MAX_CARS_PER_DIRECTION = 7
-MAX_TOTAL_CARS = 12
+MAX_CARS_PER_DIRECTION = 5
+MAX_TOTAL_CARS = 9
 
 total_crossings = 0
 crossed_cars = set()
@@ -194,7 +194,7 @@ def run_simulation(config, agent):
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 75003:  
+        if elapsed_time > 45003:  
             running = False
 
         if interval_elapsed_time >= 15000:
@@ -209,7 +209,7 @@ def run_simulation(config, agent):
             intersection_records.append(interval_crossings)
             
             reward = interval_crossings - interval_collisions * 100
-            reward = max(min(reward, 200), -2000)  # Clipping rewards to be between -1000 and 1000
+            reward = max(min(reward, 200), -750) 
             reward_records.append(reward)
             
             start_collisions = end_collisions

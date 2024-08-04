@@ -23,15 +23,17 @@ class PolicyNetwork(nn.Module):
         return mu, std
 
 class PolicyGradientAgent:
-    def __init__(self, env, entropy_coeff=0.01, gamma=0.5, learning_rate=0.0005):
+    def __init__(self, env, entropy_coeff=0.01, gamma=0.5, learning_rate=0.0005, entropy_decay=0.975):
         self.env = env
         self.policy_net = PolicyNetwork(env.observation_space.shape[0], env.action_space.shape[0])
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=15, gamma=0.5)
         self.episode_log_probs = []
         self.entropy_coeff = entropy_coeff
+        self.entropy_decay = entropy_decay
         self.gamma = gamma
         self.rewards = []
+        self.update_count = 0  # Track the number of updates
 
     def select_action(self, state):
         state = torch.FloatTensor(state).unsqueeze(0)
@@ -70,9 +72,17 @@ class PolicyGradientAgent:
         self.optimizer.step()
         self.scheduler.step()
 
+        # Decay the entropy coefficient
+        self.decay_entropy_coeff()
+
         # Clear interval data after update
         self.episode_log_probs = []
         self.rewards = []
 
     def store_reward(self, reward):
         self.rewards.append(reward)
+
+    def decay_entropy_coeff(self):
+        self.update_count += 1
+        self.entropy_coeff *= self.entropy_decay
+        print(f"Update {self.update_count}: Entropy Coefficient: {self.entropy_coeff}")
