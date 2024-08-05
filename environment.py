@@ -17,8 +17,8 @@ class IntersectionEnv(gym.Env):
         self.left_right_next_interval = self.left_right_interval + np.random.randint(-10, 10)
 
         self.action_space = spaces.Box(
-            low=np.array([50, 25, 10, 2, 10]),
-            high=np.array([200, 100, 50, 15, 75]),
+            low=np.array([50, 25, 10, 5, 10]),
+            high=np.array([200, 100, 35, 15, 30]),
             dtype=np.float32
         )
         self.observation_space = spaces.Box(

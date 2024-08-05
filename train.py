@@ -5,7 +5,7 @@ from sim import initialize_plot, update_plot, save_and_plot_data
 import matplotlib.pyplot as plt
 from helper_functions import set_seed
 
-seed = 43
+seed = 42
 set_seed(seed)
 
 def train_agent(agent, env, num_episodes):

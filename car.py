@@ -84,6 +84,13 @@ class Car:
         other: Car
         return ((self.x_pos - other.x_pos) ** 2 + (self.y_pos - other.y_pos) ** 2) ** 0.5
     
+    def calculate_acceleration(self, current_velocity, target_velocity):
+        # Calculate required acceleration to reach target velocity
+        if abs(current_velocity) < abs(target_velocity):
+            return self.config.ACCELERATION if target_velocity > 0 else -self.config.ACCELERATION
+        else:
+            return -self.config.ACCELERATION if target_velocity > 0 else self.config.ACCELERATION
+    
     def calculate_row(self, i):
         car_ahead = self.get_car_ahead(self.nearby_cars)
         if car_ahead is not None:
@@ -139,6 +146,39 @@ class Car:
                     car_ahead = car
         return car_ahead
     
+    def predict_collision(self, other_car, time_steps=10, time_interval=0.1):
+        # First, check if the cars are on potentially colliding paths
+        if self.path == other_car.path:
+            # Cars on the same path, only check if this car is behind the other
+            if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM]:
+                if (self.path == Paths.BOTTOM_TOP and self.y_pos >= other_car.y_pos) or \
+                (self.path == Paths.TOP_BOTTOM and self.y_pos <= other_car.y_pos):
+                    return False
+            elif self.path in [Paths.LEFT_RIGHT, Paths.RIGHT_LEFT]:
+                if (self.path == Paths.LEFT_RIGHT and self.x_pos >= other_car.x_pos) or \
+                (self.path == Paths.RIGHT_LEFT and self.x_pos <= other_car.x_pos):
+                    return False
+        elif not is_partner_path(self.path, other_car.path):
+            # Cars on perpendicular paths, only check near the intersection
+            intersection_x, intersection_y = SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2
+            if abs(self.x_pos - intersection_x) > 100 and abs(self.y_pos - intersection_y) > 100 and \
+            abs(other_car.x_pos - intersection_x) > 100 and abs(other_car.y_pos - intersection_y) > 100:
+                return False
+
+        # If we've passed the initial checks, predict collision
+        for step in range(time_steps):
+            time = (step + 1) * time_interval
+            my_future_x = self.x_pos + self.vx * time
+            my_future_y = self.y_pos + self.vy * time
+            other_future_x = other_car.x_pos + other_car.vx * time
+            other_future_y = other_car.y_pos + other_car.vy * time
+            
+            distance = ((my_future_x - other_future_x) ** 2 + (my_future_y - other_future_y) ** 2) ** 0.5
+            
+            if distance < self.config.COLLISION_DISTANCE:
+                return True
+        return False
+    
     def calculate_distance_ahead(self, other_car):
         if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM]:
             distance = other_car.y_pos - self.y_pos
@@ -174,6 +214,10 @@ class Car:
         if abs(self.ax) > self.config.ACCELERATION:
             self.ax = self.config.ACCELERATION if self.ax > 0 else -self.config.ACCELERATION
 
+        safety_factor = 1.5
+        self.vx *= safety_factor
+        self.vy *= safety_factor
+
     def update(self, cars, i, speed_factor=1):
         self.get_cars(cars)
         self.update_parameters()
@@ -185,6 +229,25 @@ class Car:
             
         if car_ahead:
             self.adjust_speed_to_maintain_gap(car_ahead)
+
+        # New collision avoidance logic
+        collision_predicted = False
+        for other_car in self.nearby_cars:
+            if self.predict_collision(other_car):
+                collision_predicted = True
+                break
+
+        if collision_predicted:
+            self.vx *= 0.5  # Reduce speed
+            self.vy *= 0.5
+        if self.path in [Paths.LEFT_RIGHT, Paths.RIGHT_LEFT]:
+            target_vx = self.config.MAX_VELOCITY if self.path == Paths.LEFT_RIGHT else -self.config.MAX_VELOCITY
+            self.ax = self.calculate_acceleration(self.vx, target_vx)
+            self.ay = 0
+        else:  # Paths.TOP_BOTTOM or Paths.BOTTOM_TOP
+            target_vy = self.config.MAX_VELOCITY if self.path == Paths.TOP_BOTTOM else -self.config.MAX_VELOCITY
+            self.ay = self.calculate_acceleration(self.vy, target_vy)
+            self.ax = 0
 
         if not self.at_border():
             dt = (1 / FRAME_RATE) * speed_factor  # Adjust dt with the speed factor
@@ -317,3 +380,4 @@ class Car:
     
     def draw(self, screen):
         pygame.draw.rect(screen, (0, 0, 255), (self.x_pos, self.y_pos, 10, 10))
+        # pygame.draw.circle(screen, (255, 0, 0), (int(self.x_pos), int(self.y_pos)), self.config.COLLISION_DISTANCE, 1)

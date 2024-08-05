@@ -13,6 +13,7 @@ from intersection import Intersection
 from policy_agent import PolicyGradientAgent
 from config import Config
 from helper_functions import set_seed
+from collections import defaultdict
 
 MAX_CARS_PER_DIRECTION = 5
 MAX_TOTAL_CARS = 9
@@ -26,8 +27,11 @@ intersection_records = []
 reward_records = []  
 interval_count = 0
 
+collision_cooldown = 0.1
+last_collision_time = defaultdict(lambda: 0)
+
 # Set the seed for reproducibility
-seed = 43
+seed = 42
 set_seed(seed)
 
 # Define intersection
@@ -54,10 +58,16 @@ def return_car(path, config):
     return None
 
 def add_collision(car1, car2):
+    current_time = time.time()
+    pair_key = tuple(sorted((car1.id, car2.id))) 
+
     if car1.spawned_recently() or car2.spawned_recently():
         return  # Ignore collisions for newly spawned cars
-    if (car1.id, car2.id) not in collisions:
-        collisions[(car1.id, car2.id)] = True
+
+    if current_time - last_collision_time[pair_key] > collision_cooldown:
+        last_collision_time[pair_key] = current_time
+        if pair_key not in collisions:
+            collisions[pair_key] = True
 
 
 def count_collisions():
