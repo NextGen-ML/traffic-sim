@@ -6,7 +6,7 @@ import time
 SCREEN_WIDTH = 500
 SCREEN_HEIGHT = 500
 RENDER_BORDER = 10
-FRAME_RATE = 60
+FRAME_RATE = 90
 SPEED_FACTOR = 1
 
 class StartingPos(Enum):

@@ -1,49 +1,15 @@
 import pygame
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 from car import Car
 from config import *
 from random import randint
-import sys
-import numpy as np
-import threading
-from matplotlib.animation import FuncAnimation
-from intersection import Intersection
-from policy_agent import PolicyGradientAgent
-from config import Config
-from helper_functions import set_seed
 import time
 from collections import defaultdict
+import numpy as np
 
 MAX_CARS_PER_DIRECTION = 5
 MAX_TOTAL_CARS = 8
-
-total_crossings = 0
-crossed_cars = set()
-
-collisions = {}
-collision_records = []  
-interval_collisions = []  # To track collisions within each interval
-intersection_records = []  
-reward_records = []  
-interval_count = 0
-
-# Track last collision time to avoid overcounting
-last_collision_time = defaultdict(lambda: 0)
-collision_cooldown = 1.0  # Cooldown period in seconds
-
-# Set the seed for reproducibility
-seed = 1
-set_seed(seed)
-
-# Define intersection
-four_way = Intersection(
-    motion_path_array=[Paths.TOP_BOTTOM, Paths.BOTTOM_TOP, Paths.LEFT_RIGHT, Paths.RIGHT_LEFT],
-    number_of_roads=4,
-    starting_positions=[StartingPos.BOTTOM, StartingPos.TOP, StartingPos.LEFT, StartingPos.RIGHT],
-    size=(100, 100)
-)
 
 def is_close_to(x1, y1, x2, y2, tolerance):
     dist = abs((((x2-x1)**2) + ((y2-y1)**2)) ** 0.5)
@@ -60,9 +26,9 @@ def return_car(path, config):
         return Car(StartingPos.RIGHT, Paths.RIGHT_LEFT, randint(0, 100000), config)
     return None
 
-def add_collision(car1, car2):
+def add_collision(car1, car2, collisions, interval_collisions, last_collision_time, collision_cooldown):
     current_time = time.time()
-    pair_key = tuple(sorted((car1.id, car2.id)))  
+    pair_key = tuple(sorted((car1.id, car2.id)))
 
     if car1.spawned_recently() or car2.spawned_recently():
         return  # Ignore collisions for newly spawned cars
@@ -71,29 +37,23 @@ def add_collision(car1, car2):
         last_collision_time[pair_key] = current_time
         if pair_key not in collisions:
             collisions[pair_key] = True
-            interval_collisions.append(pair_key)  # Track interval collisions
+            interval_collisions.append(pair_key)
 
-def count_collisions():
-    global collisions
+def count_collisions(collisions):
     total = 0
     for cars, col in list(collisions.items()):
         if col:
             total += 1
     return total
 
-def count_crossed_intersections(cars):
-    return sum(1 for car in cars if car.crossed_intersection)
-
 def can_create(car_list, path):
     if len(car_list) >= MAX_TOTAL_CARS:
         return False
 
-    # Count cars in the same direction
     cars_in_same_direction = sum(1 for car in car_list if car.path == path)
     if cars_in_same_direction >= MAX_CARS_PER_DIRECTION:
         return False
 
-    # Check if there's a car too close to the spawn location
     for car in car_list:
         if car.path == path:
             if path == Paths.TOP_BOTTOM:
@@ -110,13 +70,8 @@ def can_create(car_list, path):
                     return False
     return True
 
-plt.ion() 
-fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 15))
-collision_line, = ax1.plot([], [], label='Collisions', marker='o')
-crossing_line, = ax2.plot([], [], label='Crossings', marker='x')
-reward_line, = ax3.plot([], [], label='Rewards', marker='s')
-
 def initialize_plot():
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 15))
     ax1.set_xlabel('Interval')
     ax1.set_ylabel('Count')
     ax1.set_title('Collisions Over Time')
@@ -134,23 +89,23 @@ def initialize_plot():
     ax3.set_title('Rewards Over Time')
     ax3.legend()
     ax3.grid(True)
-    
-    plt.tight_layout()
 
-def update_plot(collision_records, intersection_records, reward_records):
-    collision_line.set_data(range(1, len(collision_records) + 1), collision_records)
-    crossing_line.set_data(range(1, len(intersection_records) + 1), intersection_records)
-    reward_line.set_data(range(1, len(reward_records) + 1), reward_records)
-    
+    plt.tight_layout()
+    return fig, ax1, ax2, ax3
+
+def update_plot(collision_records, intersection_records, reward_records, fig, ax1, ax2, ax3):
+    ax1.plot(range(1, len(collision_records) + 1), collision_records, label='Collisions', marker='o')
+    ax2.plot(range(1, len(intersection_records) + 1), intersection_records, label='Crossings', marker='x')
+    ax3.plot(range(1, len(reward_records) + 1), reward_records, label='Rewards', marker='s')
+
     for ax in (ax1, ax2, ax3):
         ax.relim()
         ax.autoscale_view()
-    
+
     fig.canvas.draw()
     fig.canvas.flush_events()
 
-def save_and_plot_data():
-    # Save to CSV
+def save_and_plot_data(collision_records, intersection_records, reward_records):
     data = pd.DataFrame({
         'Interval': range(1, len(collision_records) + 1),
         'Collisions': collision_records,
@@ -158,9 +113,6 @@ def save_and_plot_data():
         'Rewards': reward_records
     })
     data.to_csv('simulation_data.csv', index=False)
-
-    # Update the plot
-    update_plot(collision_records, intersection_records, reward_records)
 
 def update_parameters(config, action):
     max_velocity, acceleration, collision_distance, wait_time, distance_between_cars = action
@@ -172,8 +124,13 @@ def update_parameters(config, action):
         distance_between_cars=distance_between_cars
     )
 
-def run_simulation(config, agent):
-    global total_crossings, collision_records, intersection_records, reward_records, interval_count, interval_collisions
+def run_simulation(config, agent, interval_count=0, collision_records=None, intersection_records=None, reward_records=None):
+    if collision_records is None:
+        collision_records = []
+    if intersection_records is None:
+        intersection_records = []
+    if reward_records is None:
+        reward_records = []
 
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -182,7 +139,7 @@ def run_simulation(config, agent):
     running = True
     start_time = pygame.time.get_ticks()
 
-    initialize_plot()
+    fig, ax1, ax2, ax3 = initialize_plot()
 
     cars = []
     bottom_top_interval = 75
@@ -191,44 +148,58 @@ def run_simulation(config, agent):
     left_right_next_interval = left_right_interval + randint(-10, 10)
 
     interval_start_time = start_time
-    start_collisions = count_collisions()
+    start_collisions = 0
     interval_crossings = 0
 
-    i = 0
     interval_results = []
-    is_first_interval = True
-    last_parameter_update = start_time
+    last_collision_time = defaultdict(lambda: 0)
+    collision_cooldown = 0.3
 
-    last_collisions = 0
-    last_crossings = 0
+    collisions = {}
+    interval_collisions = []
+    total_crossings = 0
+    crossed_cars = set()
+
+    total_reward = 0
+    is_first_interval = True
+    i = 0  # Initialize the loop counter
+
+    # Initial state and action before the first interval
+    state = np.array([
+        bottom_top_next_interval,
+        left_right_next_interval,
+        1 if is_first_interval else 0,
+        0,  # Last collisions
+    ])
+    action = agent.select_action(state)
+    update_parameters(config, action)
 
     while running:
         current_time = pygame.time.get_ticks()
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 45003:  
+        if elapsed_time > 456025:  
             running = False
 
         if interval_elapsed_time >= 15000:
             interval_count += 1
-            end_collisions = count_collisions()
+            end_collisions = count_collisions(collisions)
             interval_collisions_count = len(interval_collisions)
-            interval_crossings = interval_crossings
 
-            interval_results.append((interval_collisions_count, interval_crossings, is_first_interval, bottom_top_next_interval, left_right_next_interval))
+            reward = interval_crossings - interval_collisions_count * 100
+            reward = max(min(reward, 200), -500)
+            total_reward += reward
             
+            interval_results.append((interval_collisions_count, interval_crossings, is_first_interval, bottom_top_next_interval, left_right_next_interval, reward))
+
             collision_records.append(interval_collisions_count)
             intersection_records.append(interval_crossings)
-            
-            reward = interval_crossings - interval_collisions_count * 100
-            reward = max(min(reward, 200), -750) 
             reward_records.append(reward)
-            
-            start_collisions = end_collisions
+
             interval_crossings = 0
             interval_start_time = current_time
-            is_first_interval = False  
+            is_first_interval = False
 
             last_collisions = interval_collisions_count
             last_crossings = interval_crossings
@@ -237,21 +208,14 @@ def run_simulation(config, agent):
                 bottom_top_next_interval,
                 left_right_next_interval,
                 1 if is_first_interval else 0,
-                last_collisions,  
-                # last_crossings    
+                last_collisions,
             ])
             print(f"Last Collisions {last_collisions}")
             action = agent.select_action(state)
             update_parameters(config, action)
 
-            # Store the reward obtained in this interval
-            agent.store_reward(reward)
-            print(f"Interval {interval_count} - Reward Stored")
-
-            # Reset interval collision tracking
             interval_collisions.clear()
 
-        # Generate cars
         if i % bottom_top_next_interval == 0:
             if can_create(cars, Paths.BOTTOM_TOP):
                 cars.append(return_car(Paths.BOTTOM_TOP, config))
@@ -260,7 +224,6 @@ def run_simulation(config, agent):
             if can_create(cars, Paths.LEFT_RIGHT):
                 cars.append(return_car(Paths.LEFT_RIGHT, config))
 
-        # Event handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -269,16 +232,14 @@ def run_simulation(config, agent):
                     temp = not cars[0].get_row() if cars[0].get_row() is not None else False
                     cars[0].set_row(temp)
 
-        # Screen clearing and drawing
         screen.fill((255, 255, 255))
         rect_width, rect_height = 100, 100
         rect_x = (SCREEN_WIDTH / 2) - (rect_width / 2)
         rect_y = (SCREEN_HEIGHT / 2) - (rect_height / 2)
         pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height), width=5)
 
-        # Display parameters and stats
-        font = pygame.font.Font(None, 16)  
-        collision_font = pygame.font.Font(None, 26) 
+        font = pygame.font.Font(None, 16)
+        collision_font = pygame.font.Font(None, 26)
         interval_font = pygame.font.Font(None, 26)
 
         params = config.get_parameters()
@@ -292,10 +253,10 @@ def run_simulation(config, agent):
 
         for idx, text in enumerate(params_text):
             param_surface = font.render(text, True, (0, 0, 0))
-            screen.blit(param_surface, (10, 10 + idx * 20))  
+            screen.blit(param_surface, (10, 10 + idx * 20))
 
-        collisions_text = collision_font.render(f"Collisions: {count_collisions()}", True, (255, 0, 0))
-        screen.blit(collisions_text, (340, 10)) 
+        collisions_text = collision_font.render(f"Collisions: {count_collisions(collisions)}", True, (255, 0, 0))
+        screen.blit(collisions_text, (340, 10))
 
         crossings_text = collision_font.render(f"Crossings: {total_crossings}", True, (0, 0, 255))
         screen.blit(crossings_text, (340, 35))
@@ -303,7 +264,6 @@ def run_simulation(config, agent):
         interval_text = interval_font.render(f"{interval_count}", True, (80, 80, 80))
         screen.blit(interval_text, (20, SCREEN_HEIGHT - 50))
 
-        # Update and draw cars
         for car in cars[:]:
             if car.at_border():
                 if car.crossed_intersection and car.id not in crossed_cars:
@@ -320,42 +280,14 @@ def run_simulation(config, agent):
                     interval_crossings += 1
                     crossed_cars.add(car.id)
 
-        # Check for collisions
         for j, car1 in enumerate(cars):
             for car2 in cars[j+1:]:
-                if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 10):
-                    add_collision(car1, car2)
+                if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 11):
+                    add_collision(car1, car2, collisions, interval_collisions, last_collision_time, collision_cooldown)
 
         pygame.display.flip()
         clock.tick(144)
         i += 1
 
     pygame.quit()
-
-    # Update the policy at the end of the episode
-    agent.update_policy()
-    print("Episode - Policy Updated")
-
-    for idx, (collisions, crossings, first_interval, bottom_top_next_interval, left_right_next_interval) in enumerate(interval_results):
-        print(f"Interval {idx + 1}: Collisions: {collisions}, Crossings: {crossings}, First Interval: {first_interval}, Bottom-Top Interval: {bottom_top_next_interval}, Left-Right Interval: {left_right_next_interval}")
-
-    save_and_plot_data()
-
-    return interval_results, bottom_top_next_interval, left_right_next_interval
-
-if __name__ == "__main__":
-    set_seed(seed) 
-
-    config = Config()
-    from environment import IntersectionEnv
-    
-    env = IntersectionEnv(config, four_way, None)
-    agent = PolicyGradientAgent(env)
-    env.agent = agent
-
-    total_crossings = run_simulation(config, agent)
-    print(f"Total Collisions: {count_collisions()}")
-    print(f"Total Crossings: {total_crossings}")
-    
-    plt.ioff() 
-    plt.show()
+    return interval_results, total_reward, collision_records, intersection_records, reward_records, interval_count

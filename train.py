@@ -1,7 +1,7 @@
 from policy_agent import PolicyGradientAgent
 from environment import IntersectionEnv, four_way
 from config import Config
-from sim import initialize_plot, update_plot, save_and_plot_data
+from sim import run_simulation, initialize_plot, update_plot, save_and_plot_data
 import matplotlib.pyplot as plt
 from helper_functions import set_seed
 
@@ -9,23 +9,29 @@ seed = 1
 set_seed(seed)
 
 def train_agent(agent, env, num_episodes):
-    initialize_plot()
+    fig, ax1, ax2, ax3 = initialize_plot()
+
+    collision_records = []
+    intersection_records = []
+    reward_records = []
+    interval_count = 0
 
     for episode in range(num_episodes):
-        state = env.reset()
-        done = False
-        total_reward = 0
-        
-        while not done:
-            action = agent.select_action(state)
-            next_state, reward, done, _ = env.step(action)
-            state = next_state
-            total_reward += reward
+        interval_results, total_reward, collision_records, intersection_records, reward_records, interval_count = run_simulation(
+            env.config, agent, interval_count, collision_records, intersection_records, reward_records)
 
-            print(f"Episode {episode + 1}: Total Reward: {total_reward}")
+        # Store rewards collected during simulation
+        for _, _, _, _, _, reward in interval_results:
+            agent.store_reward(reward)
+        
+        # Update the policy at the end of each episode
+        agent.update_policy()
+
+        print(f"Episode {episode + 1}: Total Reward: {total_reward}")
 
         # Update the plot after each episode
-        save_and_plot_data()
+        update_plot(collision_records, intersection_records, reward_records, fig, ax1, ax2, ax3)
+        save_and_plot_data(collision_records, intersection_records, reward_records)
 
     plt.ioff()
     plt.show()

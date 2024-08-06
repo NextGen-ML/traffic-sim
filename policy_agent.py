@@ -23,11 +23,11 @@ class PolicyNetwork(nn.Module):
         return mu, std
 
 class PolicyGradientAgent:
-    def __init__(self, env, entropy_coeff=0.01, gamma=0.3, learning_rate=0.0001, entropy_decay=0.975):
+    def __init__(self, env, entropy_coeff=0.05, gamma=0.6, learning_rate=0.009, entropy_decay=0.975):
         self.env = env
         self.policy_net = PolicyNetwork(env.observation_space.shape[0], env.action_space.shape[0])
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)
-        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=15, gamma=0.5)
+        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=20, gamma=0.5)
         self.episode_log_probs = []
         self.entropy_coeff = entropy_coeff
         self.entropy_decay = entropy_decay
@@ -44,11 +44,12 @@ class PolicyGradientAgent:
         entropy = dist.entropy().sum(dim=-1)
         self.episode_log_probs.append((log_prob, entropy))
         action = action.squeeze(0).detach().numpy()
+        action = np.tanh(action)
         low = self.env.action_space.low
         high = self.env.action_space.high
         scaled_action = low + (0.5 * (action + 1.0) * (high - low))
-        clipped_action = np.clip(scaled_action, low, high)
-        return clipped_action
+        scaled_action = np.clip(scaled_action, low, high)
+        return scaled_action
 
     def update_policy(self):
         R = 0

@@ -2,7 +2,7 @@ import numpy as np
 import gym
 from gym import spaces
 from config import Config
-from sim import run_simulation, save_and_plot_data, count_collisions, reward_records
+from sim import run_simulation, save_and_plot_data, count_collisions
 from intersection import Intersection, Paths, StartingPos
 
 class IntersectionEnv(gym.Env):
@@ -17,8 +17,8 @@ class IntersectionEnv(gym.Env):
         self.left_right_next_interval = self.left_right_interval + np.random.randint(-10, 10)
 
         self.action_space = spaces.Box(
-            low=np.array([50, 25, 10, 5, 10]),
-            high=np.array([200, 100, 35, 15, 30]),
+            low=np.array([50, 25, 12, 5, 10]),
+            high=np.array([90, 100, 30, 15, 30]),
             dtype=np.float32
         )
         self.observation_space = spaces.Box(
@@ -63,7 +63,7 @@ class IntersectionEnv(gym.Env):
         
         total_crossings = 0
         total_collisions = 0
-        for interval_collisions, interval_crossings, is_first_interval, bottom_top_next_interval, left_right_next_interval in interval_results:
+        for interval_collisions, interval_crossings, is_first_interval, bottom_top_next_interval, left_right_next_interval, reward in interval_results:
             self.collision_records.append(interval_collisions)
             self.intersection_records.append(interval_crossings)
             total_crossings += interval_crossings

@@ -214,7 +214,7 @@ class Car:
         if abs(self.ax) > self.config.ACCELERATION:
             self.ax = self.config.ACCELERATION if self.ax > 0 else -self.config.ACCELERATION
 
-        safety_factor = 1.5
+        safety_factor = 1.05
         self.vx *= safety_factor
         self.vy *= safety_factor
 
