@@ -13,25 +13,28 @@ from intersection import Intersection
 from policy_agent import PolicyGradientAgent
 from config import Config
 from helper_functions import set_seed
+import time
 from collections import defaultdict
 
 MAX_CARS_PER_DIRECTION = 5
-MAX_TOTAL_CARS = 9
+MAX_TOTAL_CARS = 8
 
 total_crossings = 0
 crossed_cars = set()
 
 collisions = {}
 collision_records = []  
+interval_collisions = []  # To track collisions within each interval
 intersection_records = []  
 reward_records = []  
 interval_count = 0
 
-collision_cooldown = 0.1
+# Track last collision time to avoid overcounting
 last_collision_time = defaultdict(lambda: 0)
+collision_cooldown = 1.0  # Cooldown period in seconds
 
 # Set the seed for reproducibility
-seed = 42
+seed = 1
 set_seed(seed)
 
 # Define intersection
@@ -59,7 +62,7 @@ def return_car(path, config):
 
 def add_collision(car1, car2):
     current_time = time.time()
-    pair_key = tuple(sorted((car1.id, car2.id))) 
+    pair_key = tuple(sorted((car1.id, car2.id)))  
 
     if car1.spawned_recently() or car2.spawned_recently():
         return  # Ignore collisions for newly spawned cars
@@ -68,7 +71,7 @@ def add_collision(car1, car2):
         last_collision_time[pair_key] = current_time
         if pair_key not in collisions:
             collisions[pair_key] = True
-
+            interval_collisions.append(pair_key)  # Track interval collisions
 
 def count_collisions():
     global collisions
@@ -170,7 +173,7 @@ def update_parameters(config, action):
     )
 
 def run_simulation(config, agent):
-    global total_crossings, collision_records, intersection_records, reward_records, interval_count
+    global total_crossings, collision_records, intersection_records, reward_records, interval_count, interval_collisions
 
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -210,15 +213,15 @@ def run_simulation(config, agent):
         if interval_elapsed_time >= 15000:
             interval_count += 1
             end_collisions = count_collisions()
-            interval_collisions = end_collisions - start_collisions
+            interval_collisions_count = len(interval_collisions)
             interval_crossings = interval_crossings
 
-            interval_results.append((interval_collisions, interval_crossings, is_first_interval, bottom_top_next_interval, left_right_next_interval))
+            interval_results.append((interval_collisions_count, interval_crossings, is_first_interval, bottom_top_next_interval, left_right_next_interval))
             
-            collision_records.append(interval_collisions)
+            collision_records.append(interval_collisions_count)
             intersection_records.append(interval_crossings)
             
-            reward = interval_crossings - interval_collisions * 100
+            reward = interval_crossings - interval_collisions_count * 100
             reward = max(min(reward, 200), -750) 
             reward_records.append(reward)
             
@@ -227,7 +230,7 @@ def run_simulation(config, agent):
             interval_start_time = current_time
             is_first_interval = False  
 
-            last_collisions = interval_collisions
+            last_collisions = interval_collisions_count
             last_crossings = interval_crossings
 
             state = np.array([
@@ -235,7 +238,7 @@ def run_simulation(config, agent):
                 left_right_next_interval,
                 1 if is_first_interval else 0,
                 last_collisions,  
-                last_crossings    
+                # last_crossings    
             ])
             print(f"Last Collisions {last_collisions}")
             action = agent.select_action(state)
@@ -244,6 +247,9 @@ def run_simulation(config, agent):
             # Store the reward obtained in this interval
             agent.store_reward(reward)
             print(f"Interval {interval_count} - Reward Stored")
+
+            # Reset interval collision tracking
+            interval_collisions.clear()
 
         # Generate cars
         if i % bottom_top_next_interval == 0:

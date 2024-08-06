@@ -23,7 +23,7 @@ class PolicyNetwork(nn.Module):
         return mu, std
 
 class PolicyGradientAgent:
-    def __init__(self, env, entropy_coeff=0.01, gamma=0.3, learning_rate=0.0003, entropy_decay=0.975):
+    def __init__(self, env, entropy_coeff=0.01, gamma=0.3, learning_rate=0.0001, entropy_decay=0.975):
         self.env = env
         self.policy_net = PolicyNetwork(env.observation_space.shape[0], env.action_space.shape[0])
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)

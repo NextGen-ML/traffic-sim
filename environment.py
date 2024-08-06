@@ -24,7 +24,7 @@ class IntersectionEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0,
             high=np.inf,
-            shape=(5,),
+            shape=(4,),
             dtype=np.float32
         )
         self.collision_records = []
@@ -70,7 +70,7 @@ class IntersectionEnv(gym.Env):
             total_collisions += interval_collisions
 
         reward = total_crossings - total_collisions * 100
-        reward = max(min(reward, 200), -750)
+        reward = max(min(reward, 200), -500)
         self.reward_records.append(reward)
 
         # Get the last interval's collision and crossing counts
@@ -88,7 +88,7 @@ class IntersectionEnv(gym.Env):
             left_right_next_interval,
             1 if is_first_interval else 0,
             last_collisions,   
-            last_crossings     
+            # last_crossings     
         ], dtype=np.float32)
 
         state_mean = np.mean(state)

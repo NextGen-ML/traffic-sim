@@ -147,12 +147,12 @@ class Car:
         return car_ahead
     
     def predict_collision(self, other_car, time_steps=10, time_interval=0.1):
-        # First, check if the cars are on potentially colliding paths
+        # First, check if the cars are on the same path
         if self.path == other_car.path:
-            # Cars on the same path, only check if this car is behind the other
+            # Check if the other car is ahead of this car
             if self.path in [Paths.BOTTOM_TOP, Paths.TOP_BOTTOM]:
-                if (self.path == Paths.BOTTOM_TOP and self.y_pos >= other_car.y_pos) or \
-                (self.path == Paths.TOP_BOTTOM and self.y_pos <= other_car.y_pos):
+                if (self.path == Paths.BOTTOM_TOP and self.y_pos <= other_car.y_pos) or \
+                (self.path == Paths.TOP_BOTTOM and self.y_pos >= other_car.y_pos):
                     return False
             elif self.path in [Paths.LEFT_RIGHT, Paths.RIGHT_LEFT]:
                 if (self.path == Paths.LEFT_RIGHT and self.x_pos >= other_car.x_pos) or \
