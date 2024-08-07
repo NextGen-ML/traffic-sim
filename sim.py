@@ -153,7 +153,7 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
 
     interval_results = []
     last_collision_time = defaultdict(lambda: 0)
-    collision_cooldown = 0.3
+    collision_cooldown = 0
 
     collisions = {}
     interval_collisions = []
@@ -179,7 +179,7 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 45620:  
+        if elapsed_time > 45005:  
             running = False
 
         if interval_elapsed_time >= 15000:
@@ -187,7 +187,7 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
             end_collisions = count_collisions(collisions)
             interval_collisions_count = len(interval_collisions)
 
-            reward = interval_crossings - interval_collisions_count * 100
+            reward = interval_crossings - interval_collisions_count * 150
             reward = max(min(reward, 200), -500)
             total_reward += reward
             
@@ -282,7 +282,7 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
 
         for j, car1 in enumerate(cars):
             for car2 in cars[j+1:]:
-                if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 11):
+                if is_close_to(car1.x_pos, car1.y_pos, car2.x_pos, car2.y_pos, 10.5):
                     add_collision(car1, car2, collisions, interval_collisions, last_collision_time, collision_cooldown)
 
         pygame.display.flip()

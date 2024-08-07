@@ -31,21 +31,19 @@ class IntersectionEnv(gym.Env):
         self.intersection_records = []
         self.reward_records = []
 
+        self.state_mean = np.array([75, 75, 0.33, 0]) 
+        self.state_std = np.array([10, 10, 0.33, 1])
+
     def reset(self):
         self.collision_records = []
         self.intersection_records = []
         self.reward_records = []
-        # Instead of calling update_parameters() without arguments,
-        # let's reset to default values or use the current values
-        self.config.update_parameters(
-            max_velocity=self.config.MAX_VELOCITY,
-            acceleration=self.config.ACCELERATION,
-            collision_distance=self.config.COLLISION_DISTANCE,
-            wait_time=self.config.WAIT_TIME,
-            distance_between_cars=self.config.DISTANCE_BETWEEN_CARS
-        )
-        self.bottom_top_interval = 50
-        self.left_right_interval = 50
+        
+        self.bottom_top_interval = 75 
+        self.left_right_interval = 75
+        self.bottom_top_next_interval = self.bottom_top_interval + np.random.randint(-10, 10)
+        self.left_right_next_interval = self.left_right_interval + np.random.randint(-10, 10)
+        
         return self._get_state(is_first_interval=True)
 
     def step(self, action):
@@ -69,7 +67,7 @@ class IntersectionEnv(gym.Env):
             total_crossings += interval_crossings
             total_collisions += interval_collisions
 
-        reward = total_crossings - total_collisions * 100
+        reward = total_crossings - total_collisions * 150
         reward = max(min(reward, 200), -500)
         self.reward_records.append(reward)
 
@@ -88,12 +86,9 @@ class IntersectionEnv(gym.Env):
             left_right_next_interval,
             1 if is_first_interval else 0,
             last_collisions,   
-            # last_crossings     
         ], dtype=np.float32)
 
-        state_mean = np.mean(state)
-        state_std = np.std(state) + 1e-8  # Avoid division by zero
-        normalized_state = (state - state_mean) / state_std
+        normalized_state = (state - self.state_mean) / self.state_std
 
         return normalized_state
 
