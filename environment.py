@@ -34,18 +34,6 @@ class IntersectionEnv(gym.Env):
         self.state_mean = np.array([75, 75, 0.33, 0]) 
         self.state_std = np.array([10, 10, 0.33, 1])
 
-    def reset(self):
-        self.collision_records = []
-        self.intersection_records = []
-        self.reward_records = []
-        
-        self.bottom_top_interval = 75 
-        self.left_right_interval = 75
-        self.bottom_top_next_interval = self.bottom_top_interval + np.random.randint(-10, 10)
-        self.left_right_next_interval = self.left_right_interval + np.random.randint(-10, 10)
-        
-        return self._get_state(is_first_interval=True)
-
     def step(self, action):
         action = np.clip(action, self.action_space.low, self.action_space.high)
         max_velocity, acceleration, collision_distance, wait_time, distance_between_cars = action
@@ -57,7 +45,7 @@ class IntersectionEnv(gym.Env):
             distance_between_cars=distance_between_cars
         )
 
-        interval_results, self.bottom_top_next_interval, self.left_right_next_interval = run_simulation(self.config, self.agent)
+        interval_results, self.bottom_top_next_interval, self.left_right_next_interval, total_reward, collision_records, intersection_records, reward_records, _ = run_simulation(self.config, self.agent)
         
         total_crossings = 0
         total_collisions = 0

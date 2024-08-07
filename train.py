@@ -5,7 +5,7 @@ from sim import run_simulation, initialize_plot, update_plot, save_and_plot_data
 import matplotlib.pyplot as plt
 from helper_functions import set_seed
 
-seed = 42
+seed = 43
 set_seed(seed)
 
 def train_agent(agent, env, num_episodes):
@@ -17,13 +17,13 @@ def train_agent(agent, env, num_episodes):
     interval_count = 0
 
     for episode in range(num_episodes):
-        interval_results, total_reward, collision_records, intersection_records, reward_records, interval_count = run_simulation(
-            env.config, agent, interval_count, collision_records, intersection_records, reward_records)
+        # interval_results, total_reward, collision_records, intersection_records, reward_records, interval_count = run_simulation(
+        #     env.config, agent, interval_count, collision_records, intersection_records, reward_records)
+        interval_results, bottom_top_next_interval, left_right_next_interval, total_reward, collision_records, intersection_records, reward_records, interval_count = run_simulation(env.config, agent, interval_count, collision_records, intersection_records, reward_records)
 
         # Store rewards collected during simulation
         for _, _, _, _, _, reward in interval_results:
             agent.store_reward(reward)
-        
         # Update the policy at the end of each episode
         agent.update_policy()
 

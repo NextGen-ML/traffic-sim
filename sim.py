@@ -125,6 +125,7 @@ def update_parameters(config, action):
     )
 
 def run_simulation(config, agent, interval_count=0, collision_records=None, intersection_records=None, reward_records=None):
+    print("run")
     if collision_records is None:
         collision_records = []
     if intersection_records is None:
@@ -290,4 +291,4 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         i += 1
 
     pygame.quit()
-    return interval_results, total_reward, collision_records, intersection_records, reward_records, interval_count
+    return interval_results, bottom_top_next_interval, left_right_next_interval, total_reward, collision_records, intersection_records, reward_records, interval_count
