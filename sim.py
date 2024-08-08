@@ -9,7 +9,7 @@ from collections import defaultdict
 import numpy as np
 
 MAX_CARS_PER_DIRECTION = 5
-MAX_TOTAL_CARS = 8
+MAX_TOTAL_CARS = 9
 
 def is_close_to(x1, y1, x2, y2, tolerance):
     dist = abs((((x2-x1)**2) + ((y2-y1)**2)) ** 0.5)
@@ -105,7 +105,7 @@ def update_plot(collision_records, intersection_records, reward_records, fig, ax
     fig.canvas.draw()
     fig.canvas.flush_events()
 
-def save_and_plot_data(collision_records, intersection_records, reward_records):
+def save_and_plot_data(collision_records, intersection_records, reward_records, parameter_records):
     data = pd.DataFrame({
         'Interval': range(1, len(collision_records) + 1),
         'Collisions': collision_records,
@@ -113,18 +113,20 @@ def save_and_plot_data(collision_records, intersection_records, reward_records):
         'Rewards': reward_records
     })
     data.to_csv('simulation_data.csv', index=False)
+    
+    parameters_data = pd.DataFrame(parameter_records, columns=['Interval', 'Max_Velocity', 'Acceleration', 'Collision_Distance', 'Distance_Between_Cars'])
+    parameters_data.to_csv('parameter_data.csv', index=False)
 
 def update_parameters(config, action):
-    max_velocity, acceleration, collision_distance, wait_time, distance_between_cars = action
+    max_velocity, acceleration, collision_distance, distance_between_cars = action
     config.update_parameters(
         max_velocity=max_velocity,
         acceleration=acceleration,
         collision_distance=collision_distance,
-        wait_time=wait_time,
         distance_between_cars=distance_between_cars
     )
 
-def run_simulation(config, agent, interval_count=0, collision_records=None, intersection_records=None, reward_records=None):
+def run_simulation(config, agent, interval_count=0, collision_records=None, intersection_records=None, reward_records=None, parameter_records=None):
     print("run")
     if collision_records is None:
         collision_records = []
@@ -132,6 +134,8 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         intersection_records = []
     if reward_records is None:
         reward_records = []
+    if parameter_records is None:
+        parameter_records = []
 
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -174,6 +178,7 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
     ])
     action = agent.select_action(state)
     update_parameters(config, action)
+    parameter_records.append([interval_count, *action])  # Log initial parameters
 
     while running:
         current_time = pygame.time.get_ticks()
@@ -188,7 +193,7 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
             end_collisions = count_collisions(collisions)
             interval_collisions_count = len(interval_collisions)
 
-            reward = interval_crossings - interval_collisions_count * 150
+            reward = interval_crossings - interval_collisions_count * 100
             reward = max(min(reward, 200), -500)
             total_reward += reward
             
@@ -214,6 +219,7 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
             print(f"Last Collisions {last_collisions}")
             action = agent.select_action(state)
             update_parameters(config, action)
+            parameter_records.append([interval_count, *action])  # Log parameters for each interval
 
             interval_collisions.clear()
 
@@ -248,7 +254,6 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
             f"MAX_VELOCITY: {params['MAX_VELOCITY']}",
             f"ACCELERATION: {params['ACCELERATION']}",
             f"COLLISION_DISTANCE: {params['COLLISION_DISTANCE']}",
-            f"WAIT_TIME: {params['WAIT_TIME']}",
             f"DISTANCE_BETWEEN_CARS: {params['DISTANCE_BETWEEN_CARS']}"
         ]
 
@@ -291,4 +296,4 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         i += 1
 
     pygame.quit()
-    return interval_results, bottom_top_next_interval, left_right_next_interval, total_reward, collision_records, intersection_records, reward_records, interval_count
+    return interval_results, bottom_top_next_interval, left_right_next_interval, total_reward, collision_records, intersection_records, reward_records, interval_count, parameter_records

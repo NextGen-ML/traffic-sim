@@ -47,14 +47,13 @@ class Config:
         self.MAX_VELOCITY = 100
         self.ACCELERATION = 50
         self.COLLISION_DISTANCE = 50
-        self.WAIT_TIME = 4
+        self.WAIT_TIME = 10
         self.DISTANCE_BETWEEN_CARS = 20
 
-    def update_parameters(self, max_velocity=None, acceleration=None, collision_distance=None, wait_time=None, distance_between_cars=None):
+    def update_parameters(self, max_velocity=None, acceleration=None, collision_distance=None, distance_between_cars=None):
         self.MAX_VELOCITY = max_velocity if max_velocity is not None else self.MAX_VELOCITY
         self.ACCELERATION = acceleration if acceleration is not None else self.ACCELERATION
         self.COLLISION_DISTANCE = collision_distance if collision_distance is not None else self.COLLISION_DISTANCE
-        self.WAIT_TIME = wait_time if wait_time is not None else self.WAIT_TIME
         self.DISTANCE_BETWEEN_CARS = distance_between_cars if distance_between_cars is not None else self.DISTANCE_BETWEEN_CARS
 
     def get_parameters(self):
