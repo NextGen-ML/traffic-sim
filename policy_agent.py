@@ -10,7 +10,7 @@ class PolicyNetwork(nn.Module):
         super(PolicyNetwork, self).__init__()
         self.fc1 = nn.Linear(input_size, 64)
         self.fc2 = nn.Linear(64, output_size)
-        self.log_std = nn.Parameter(torch.full((output_size,), -1.5))
+        self.log_std = nn.Parameter(torch.full((output_size,), -1.0))
         
         # Initialize weights
         nn.init.xavier_uniform_(self.fc1.weight)
@@ -25,11 +25,11 @@ class PolicyNetwork(nn.Module):
         return mu, std
 
 class PolicyGradientAgent:
-    def __init__(self, env, entropy_coeff=0.008, gamma=0.7, learning_rate=0.002, entropy_decay=0.975):
+    def __init__(self, env, entropy_coeff=0.01, gamma=0.65, learning_rate=0.002, entropy_decay=0.975):
         self.env = env
         self.policy_net = PolicyNetwork(env.observation_space.shape[0], env.action_space.shape[0])
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)
-        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=30, gamma=0.6)
+        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=30, gamma=0.65)
         self.episode_log_probs = []
         self.entropy_coeff = entropy_coeff
         self.entropy_decay = entropy_decay
@@ -47,10 +47,9 @@ class PolicyGradientAgent:
         self.episode_log_probs.append((log_prob, entropy))
         action = action.squeeze(0).detach().numpy()
 
-        # Scale the action to the correct range
         low = self.env.action_space.low
         high = self.env.action_space.high
-        scaled_action = low + (action + 1) * (high - low) / 2
+        scaled_action = action * (high - low) / 2 + (high + low) / 2
         clipped_action = np.clip(scaled_action, low, high)
         return clipped_action
 
@@ -59,7 +58,7 @@ class PolicyGradientAgent:
         R = 0
         policy_loss = []
         returns = []
-
+        print(self.rewards)
         # Calculate the discounted returns
         for r in self.rewards[::-1]:
             R = r + self.gamma * R
@@ -73,7 +72,7 @@ class PolicyGradientAgent:
         self.optimizer.zero_grad()
         policy_loss = -torch.mean(torch.stack([log_prob * R + self.entropy_coeff * entropy for (log_prob, entropy), R in zip(self.episode_log_probs, returns)]))
         policy_loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1)
+        torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1.5)
         self.optimizer.step()
         self.scheduler.step()
 

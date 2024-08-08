@@ -47,7 +47,7 @@ class Config:
         self.MAX_VELOCITY = 100
         self.ACCELERATION = 50
         self.COLLISION_DISTANCE = 50
-        self.WAIT_TIME = 6
+        self.WAIT_TIME = 6.5
         self.DISTANCE_BETWEEN_CARS = 20
 
     def update_parameters(self, max_velocity=None, acceleration=None, collision_distance=None, distance_between_cars=None):
