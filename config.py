@@ -6,7 +6,7 @@ import time
 SCREEN_WIDTH = 500
 SCREEN_HEIGHT = 500
 RENDER_BORDER = 10
-FRAME_RATE = 90
+FRAME_RATE = 60
 SPEED_FACTOR = 1
 
 class StartingPos(Enum):
@@ -47,7 +47,7 @@ class Config:
         self.MAX_VELOCITY = 100
         self.ACCELERATION = 50
         self.COLLISION_DISTANCE = 50
-        self.WAIT_TIME = 10
+        self.WAIT_TIME = 6
         self.DISTANCE_BETWEEN_CARS = 20
 
     def update_parameters(self, max_velocity=None, acceleration=None, collision_distance=None, distance_between_cars=None):
@@ -62,5 +62,4 @@ class Config:
             'ACCELERATION': self.ACCELERATION,
             'COLLISION_DISTANCE': self.COLLISION_DISTANCE,
             'WAIT_TIME': self.WAIT_TIME,
-            'DISTANCE_BETWEEN_CARS': self.DISTANCE_BETWEEN_CARS
         }

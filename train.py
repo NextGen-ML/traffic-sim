@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from helper_functions import set_seed
 import torch
 
-seed = 43
+seed = 46
 set_seed(seed)
 
 def train_agent(agent, env, num_episodes):

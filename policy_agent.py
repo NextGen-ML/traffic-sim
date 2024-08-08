@@ -8,26 +8,28 @@ import numpy as np
 class PolicyNetwork(nn.Module):
     def __init__(self, input_size, output_size):
         super(PolicyNetwork, self).__init__()
-        self.fc1 = nn.Linear(input_size, 64)  # Reduced number of neurons
+        self.fc1 = nn.Linear(input_size, 64)
         self.fc2 = nn.Linear(64, output_size)
-        self.log_std = nn.Parameter(torch.zeros(output_size))
+        self.log_std = nn.Parameter(torch.full((output_size,), -1.5))
         
         # Initialize weights
         nn.init.xavier_uniform_(self.fc1.weight)
         nn.init.xavier_uniform_(self.fc2.weight)
 
     def forward(self, x):
-        x = F.leaky_relu(self.fc1(x)) 
-        mu = F.tanh(self.fc2(x))
+        x = F.leaky_relu(self.fc1(x))
+        mu = F.tanh(self.fc2(x) * 0.035)
+        print(mu)
         std = F.softplus(self.log_std).expand_as(mu)
+        print(std)
         return mu, std
 
 class PolicyGradientAgent:
-    def __init__(self, env, entropy_coeff=0.05, gamma=0.7, learning_rate=0.008, entropy_decay=0.975):
+    def __init__(self, env, entropy_coeff=0.008, gamma=0.7, learning_rate=0.002, entropy_decay=0.975):
         self.env = env
         self.policy_net = PolicyNetwork(env.observation_space.shape[0], env.action_space.shape[0])
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)
-        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=30, gamma=0.5)
+        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=30, gamma=0.6)
         self.episode_log_probs = []
         self.entropy_coeff = entropy_coeff
         self.entropy_decay = entropy_decay
@@ -44,14 +46,11 @@ class PolicyGradientAgent:
         entropy = dist.entropy().sum(dim=-1)
         self.episode_log_probs.append((log_prob, entropy))
         action = action.squeeze(0).detach().numpy()
-        
-        # Scale each dimension of the action individually
+
+        # Scale the action to the correct range
         low = self.env.action_space.low
         high = self.env.action_space.high
-        scaled_action = np.zeros_like(action)
-        for i in range(len(action)):
-            scaled_action[i] = low[i] + (action[i] - (-1)) * (high[i] - low[i]) / (1 - (-1))
-        
+        scaled_action = low + (action + 1) * (high - low) / 2
         clipped_action = np.clip(scaled_action, low, high)
         return clipped_action
 
@@ -74,7 +73,7 @@ class PolicyGradientAgent:
         self.optimizer.zero_grad()
         policy_loss = -torch.mean(torch.stack([log_prob * R + self.entropy_coeff * entropy for (log_prob, entropy), R in zip(self.episode_log_probs, returns)]))
         policy_loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1.0)
+        torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1)
         self.optimizer.step()
         self.scheduler.step()
 

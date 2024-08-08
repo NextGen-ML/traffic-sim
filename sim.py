@@ -9,7 +9,7 @@ from collections import defaultdict
 import numpy as np
 
 MAX_CARS_PER_DIRECTION = 5
-MAX_TOTAL_CARS = 9
+MAX_TOTAL_CARS = 8
 
 def is_close_to(x1, y1, x2, y2, tolerance):
     dist = abs((((x2-x1)**2) + ((y2-y1)**2)) ** 0.5)
@@ -114,16 +114,15 @@ def save_and_plot_data(collision_records, intersection_records, reward_records, 
     })
     data.to_csv('simulation_data.csv', index=False)
     
-    parameters_data = pd.DataFrame(parameter_records, columns=['Interval', 'Max_Velocity', 'Acceleration', 'Collision_Distance', 'Distance_Between_Cars'])
+    parameters_data = pd.DataFrame(parameter_records, columns=['Interval', 'Max_Velocity', 'Acceleration', 'Collision_Distance'])
     parameters_data.to_csv('parameter_data.csv', index=False)
 
 def update_parameters(config, action):
-    max_velocity, acceleration, collision_distance, distance_between_cars = action
+    max_velocity, acceleration, collision_distance = action
     config.update_parameters(
         max_velocity=max_velocity,
         acceleration=acceleration,
         collision_distance=collision_distance,
-        distance_between_cars=distance_between_cars
     )
 
 def run_simulation(config, agent, interval_count=0, collision_records=None, intersection_records=None, reward_records=None, parameter_records=None):
@@ -189,6 +188,9 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
             running = False
 
         if interval_elapsed_time >= 15000:
+            bottom_top_next_interval = bottom_top_interval + randint(-10, 10)
+            left_right_next_interval = left_right_interval + randint(-10, 10)
+            print(bottom_top_next_interval)
             interval_count += 1
             end_collisions = count_collisions(collisions)
             interval_collisions_count = len(interval_collisions)
@@ -254,7 +256,6 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
             f"MAX_VELOCITY: {params['MAX_VELOCITY']}",
             f"ACCELERATION: {params['ACCELERATION']}",
             f"COLLISION_DISTANCE: {params['COLLISION_DISTANCE']}",
-            f"DISTANCE_BETWEEN_CARS: {params['DISTANCE_BETWEEN_CARS']}"
         ]
 
         for idx, text in enumerate(params_text):
