@@ -10,22 +10,25 @@ class PolicyNetwork(nn.Module):
         super(PolicyNetwork, self).__init__()
         self.fc1 = nn.Linear(input_size, 64)
         self.fc2 = nn.Linear(64, output_size)
-        self.log_std = nn.Parameter(torch.full((output_size,), -1.0))
+        self.log_std = nn.Parameter(torch.full((output_size,), -0.1))
+        self.update_count = 0
         
         # Initialize weights
         nn.init.xavier_uniform_(self.fc1.weight)
         nn.init.xavier_uniform_(self.fc2.weight)
 
     def forward(self, x):
+        self.update_count += 1
         x = F.leaky_relu(self.fc1(x))
         mu = F.tanh(self.fc2(x) * 0.035)
         print(mu)
         std = F.softplus(self.log_std).expand_as(mu)
+        std = std * (0.997 ** self.update_count)
         print(std)
         return mu, std
 
 class PolicyGradientAgent:
-    def __init__(self, env, entropy_coeff=0.01, gamma=0.65, learning_rate=0.002, entropy_decay=0.975):
+    def __init__(self, env, entropy_coeff=0.01, gamma=0.65, learning_rate=0.0005, entropy_decay=0.975):
         self.env = env
         self.policy_net = PolicyNetwork(env.observation_space.shape[0], env.action_space.shape[0])
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)
