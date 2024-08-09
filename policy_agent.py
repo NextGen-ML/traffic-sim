@@ -28,11 +28,11 @@ class PolicyNetwork(nn.Module):
         return mu, std
 
 class PolicyGradientAgent:
-    def __init__(self, env, entropy_coeff=0.01, gamma=0.65, learning_rate=0.00075, entropy_decay=0.975):
+    def __init__(self, env, entropy_coeff=0.01, gamma=0.65, learning_rate=0.0007, entropy_decay=0.975):
         self.env = env
         self.policy_net = PolicyNetwork(env.observation_space.shape[0], env.action_space.shape[0])
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)
-        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=30, gamma=0.65)
+        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=30, gamma=0.75)
         self.episode_log_probs = []
         self.entropy_coeff = entropy_coeff
         self.entropy_decay = entropy_decay

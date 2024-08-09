@@ -184,7 +184,7 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 45015:  
+        if elapsed_time > 45020:  
             running = False
 
         if interval_elapsed_time >= 15000:
