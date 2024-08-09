@@ -23,12 +23,12 @@ class PolicyNetwork(nn.Module):
         mu = F.tanh(self.fc2(x) * 0.035)
         print(mu)
         std = F.softplus(self.log_std).expand_as(mu)
-        std = std * (0.997 ** self.update_count)
+        std = std * (0.998 ** self.update_count)
         print(std)
         return mu, std
 
 class PolicyGradientAgent:
-    def __init__(self, env, entropy_coeff=0.01, gamma=0.65, learning_rate=0.0005, entropy_decay=0.975):
+    def __init__(self, env, entropy_coeff=0.01, gamma=0.65, learning_rate=0.00075, entropy_decay=0.975):
         self.env = env
         self.policy_net = PolicyNetwork(env.observation_space.shape[0], env.action_space.shape[0])
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)

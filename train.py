@@ -48,4 +48,4 @@ if __name__ == "__main__":
     agent = PolicyGradientAgent(env)
     env.agent = agent
 
-    train_agent(agent, env, num_episodes=1000)
+    train_agent(agent, env, num_episodes=500)
