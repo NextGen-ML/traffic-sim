@@ -19,9 +19,9 @@ class PolicyNetwork(nn.Module):
     def forward(self, x):
         x = F.leaky_relu(self.fc1(x))
         mu = F.tanh(self.fc2(x) * 0.035)
-        print(mu)
+        # print(mu)
         std = F.softplus(self.log_std).expand_as(mu)
-        print(std)
+        # print(std)
         return mu, std
 
 class PolicyGradientAgent:
@@ -57,7 +57,7 @@ class PolicyGradientAgent:
         R = 0
         policy_loss = []
         returns = []
-        print(self.rewards)
+        # print(self.rewards)
         # Calculate the discounted returns
         for r in self.rewards[::-1]:
             R = r + self.gamma * R

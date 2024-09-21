@@ -8,8 +8,61 @@ import time
 from collections import defaultdict
 import numpy as np
 
+# --- CONSTANTS ---
 MAX_CARS_PER_DIRECTION = 5
 MAX_TOTAL_CARS = 8
+
+# --- SIMULATION WINDOW ---
+
+def initialize_window():
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption('Car Simulation')
+    clock = pygame.time.Clock()
+    return screen, clock
+
+def update_screen(screen, total_crossings, collisions, interval_count, config):
+    screen.fill((255, 255, 255))
+    rect_width, rect_height = 100, 100
+    rect_x = (SCREEN_WIDTH / 2) - (rect_width / 2)
+    rect_y = (SCREEN_HEIGHT / 2) - (rect_height / 2)
+    pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height), width=5)
+
+    font = pygame.font.Font(None, 16)
+    collision_font = pygame.font.Font(None, 26)
+    interval_font = pygame.font.Font(None, 26)
+
+    params = config.get_parameters()
+    params_text = [
+        f"MAX_VELOCITY: {params['MAX_VELOCITY']}",
+        f"ACCELERATION: {params['ACCELERATION']}",
+        f"COLLISION_DISTANCE: {params['COLLISION_DISTANCE']}",
+    ]
+
+    for idx, text in enumerate(params_text):
+        param_surface = font.render(text, True, (0, 0, 0))
+        screen.blit(param_surface, (10, 10 + idx * 20))
+
+    collisions_text = collision_font.render(f"Collisions: {count_collisions(collisions)}", True, (255, 0, 0))
+    screen.blit(collisions_text, (340, 10))
+
+    crossings_text = collision_font.render(f"Crossings: {total_crossings}", True, (0, 0, 255))
+    screen.blit(crossings_text, (340, 35))
+
+    interval_text = interval_font.render(f"{interval_count}", True, (80, 80, 80))
+    screen.blit(interval_text, (20, SCREEN_HEIGHT - 50))
+
+def handle_events(cars):
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            return False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_k and cars:
+                temp = not cars[0].get_row() if cars[0].get_row() is not None else False
+                cars[0].set_row(temp)
+    return True
+
+# --- CAR BEHAVIOR ---
 
 def is_close_to(x1, y1, x2, y2, tolerance):
     dist = abs((((x2-x1)**2) + ((y2-y1)**2)) ** 0.5)
@@ -70,6 +123,17 @@ def can_create(car_list, path):
                     return False
     return True
 
+def create_cars(i, bottom_top_next_interval, left_right_next_interval, cars, config): # TODO: Are the cars actually created with each interval? The exact count sometimes gets skipped.
+    if i % bottom_top_next_interval == 0:
+        if can_create(cars, Paths.BOTTOM_TOP):
+            cars.append(return_car(Paths.BOTTOM_TOP, config))
+
+    if i % left_right_next_interval == 0:
+        if can_create(cars, Paths.LEFT_RIGHT):
+            cars.append(return_car(Paths.LEFT_RIGHT, config))
+
+# --- PLOTTING --- TODO: Actually display plots
+
 def initialize_plot():
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 15))
     ax1.set_xlabel('Interval')
@@ -117,6 +181,7 @@ def save_and_plot_data(collision_records, intersection_records, reward_records, 
     parameters_data = pd.DataFrame(parameter_records, columns=['Interval', 'Max_Velocity', 'Acceleration', 'Collision_Distance'])
     parameters_data.to_csv('parameter_data.csv', index=False)
 
+# --- AGENT AND INTERSECTION FLOW ---
 def update_parameters(config, action):
     max_velocity, acceleration, collision_distance = action
     config.update_parameters(
@@ -136,13 +201,6 @@ def initialize_records(collision_records, intersection_records, reward_records, 
         parameter_records = []
     return collision_records, intersection_records, reward_records, parameter_records
 
-def initialize_window():
-    pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption('Car Simulation')
-    clock = pygame.time.Clock()
-    return screen, clock
-
 def initialize_state_and_action(agent, bottom_top_next_interval, left_right_next_interval, is_first_interval, last_collisions):
     state = np.array([
         bottom_top_next_interval,
@@ -153,55 +211,7 @@ def initialize_state_and_action(agent, bottom_top_next_interval, left_right_next
     action = agent.select_action(state)
     return state, action
 
-def handle_events(cars):
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            return False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_k and cars:
-                temp = not cars[0].get_row() if cars[0].get_row() is not None else False
-                cars[0].set_row(temp)
-    return True
-
-def create_cars(i, bottom_top_next_interval, left_right_next_interval, cars, config):
-    if i % bottom_top_next_interval == 0:
-        if can_create(cars, Paths.BOTTOM_TOP):
-            cars.append(return_car(Paths.BOTTOM_TOP, config))
-
-    if i % left_right_next_interval == 0:
-        if can_create(cars, Paths.LEFT_RIGHT):
-            cars.append(return_car(Paths.LEFT_RIGHT, config))
-
-def update_screen(screen, total_crossings, collisions, interval_count, config):
-    screen.fill((255, 255, 255))
-    rect_width, rect_height = 100, 100
-    rect_x = (SCREEN_WIDTH / 2) - (rect_width / 2)
-    rect_y = (SCREEN_HEIGHT / 2) - (rect_height / 2)
-    pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height), width=5)
-
-    font = pygame.font.Font(None, 16)
-    collision_font = pygame.font.Font(None, 26)
-    interval_font = pygame.font.Font(None, 26)
-
-    params = config.get_parameters()
-    params_text = [
-        f"MAX_VELOCITY: {params['MAX_VELOCITY']}",
-        f"ACCELERATION: {params['ACCELERATION']}",
-        f"COLLISION_DISTANCE: {params['COLLISION_DISTANCE']}",
-    ]
-
-    for idx, text in enumerate(params_text):
-        param_surface = font.render(text, True, (0, 0, 0))
-        screen.blit(param_surface, (10, 10 + idx * 20))
-
-    collisions_text = collision_font.render(f"Collisions: {count_collisions(collisions)}", True, (255, 0, 0))
-    screen.blit(collisions_text, (340, 10))
-
-    crossings_text = collision_font.render(f"Crossings: {total_crossings}", True, (0, 0, 255))
-    screen.blit(crossings_text, (340, 35))
-
-    interval_text = interval_font.render(f"{interval_count}", True, (80, 80, 80))
-    screen.blit(interval_text, (20, SCREEN_HEIGHT - 50))
+# --- MAIN SIMULATION FUNCTION ---
 
 def run_simulation(config, agent, interval_count=0, collision_records=None, intersection_records=None, reward_records=None, parameter_records=None):
 
@@ -249,12 +259,11 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 45005:
+        if elapsed_time > 15005:
             running = False
 
         bottom_top_next_interval = bottom_top_interval + randint(-10, 10)
         left_right_next_interval = left_right_interval + randint(-10, 10)
-        print(bottom_top_next_interval)
         end_collisions = count_collisions(collisions)
         interval_collisions_count = len(interval_collisions)
 
@@ -281,14 +290,14 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
             1 if is_first_interval else 0,
             last_collisions,
         ])
-        print(f"Last Collisions {last_collisions}")
         action = agent.select_action(state)
-        if elapsed_time % 500 == 0:
+        if interval_elapsed_time > 2500 == 0:
             update_parameters(config, action)
             parameter_records.append([interval_count, *action])  # Log parameters for each interval
             interval_count += 1
 
             interval_collisions.clear()
+            interval_elapsed_time = 0
 
         create_cars(i, bottom_top_next_interval, left_right_next_interval, cars, config)
 
@@ -320,6 +329,8 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         pygame.display.flip()
         clock.tick(144)
         i += 1
+
+    print(interval_results)
 
     pygame.quit()
     return interval_results, bottom_top_next_interval, left_right_next_interval, total_reward, collision_records, intersection_records, reward_records, interval_count, parameter_records
