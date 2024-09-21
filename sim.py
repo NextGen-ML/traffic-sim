@@ -136,15 +136,20 @@ def initialize_records(collision_records, intersection_records, reward_records, 
         parameter_records = []
     return collision_records, intersection_records, reward_records, parameter_records
 
+def initialize_window():
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption('Car Simulation')
+    clock = pygame.time.Clock()
+    return screen, clock
+
 def run_simulation(config, agent, interval_count=0, collision_records=None, intersection_records=None, reward_records=None, parameter_records=None):
 
     collision_records, intersection_records, reward_records, parameter_records = initialize_records(
         collision_records, intersection_records, reward_records, parameter_records)
 
-    pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption('Car Simulation')
-    clock = pygame.time.Clock()
+    screen, clock = initialize_window()
+
     running = True
     start_time = pygame.time.get_ticks()
 
