@@ -143,6 +143,16 @@ def initialize_window():
     clock = pygame.time.Clock()
     return screen, clock
 
+def initialize_state_and_action(agent, bottom_top_next_interval, left_right_next_interval, is_first_interval, last_collisions):
+    state = np.array([
+        bottom_top_next_interval,
+        left_right_next_interval,
+        1 if is_first_interval else 0,
+        last_collisions
+    ])
+    action = agent.select_action(state)
+    return state, action
+
 def run_simulation(config, agent, interval_count=0, collision_records=None, intersection_records=None, reward_records=None, parameter_records=None):
 
     collision_records, intersection_records, reward_records, parameter_records = initialize_records(
@@ -178,14 +188,9 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
     is_first_interval = True
     i = 0  # Initialize the loop counter
 
-    # Initial state and action before the first interval
-    state = np.array([
-        bottom_top_next_interval,
-        left_right_next_interval,
-        1 if is_first_interval else 0,
-        0,  # Last collisions
-    ])
-    action = agent.select_action(state)
+    state, action = initialize_state_and_action(agent, bottom_top_next_interval, left_right_next_interval,
+                                                1 if is_first_interval else 0, 0) #TODO: Why are the collisions 0?
+
     update_parameters(config, action)
     parameter_records.append([interval_count, *action])  # Log initial parameters
 
