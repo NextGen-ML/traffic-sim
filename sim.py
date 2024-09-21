@@ -239,7 +239,7 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
     i = 0  # Initialize the loop counter
 
     state, action = initialize_state_and_action(agent, bottom_top_next_interval, left_right_next_interval,
-                                                1 if is_first_interval else 0, 0) #TODO: Why are the collisions 0?
+                                                1 if is_first_interval else 0, 0) #TODO: Why are the collisions set to 0?
 
     update_parameters(config, action)
     parameter_records.append([interval_count, *action])  # Log initial parameters
