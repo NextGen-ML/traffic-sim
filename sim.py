@@ -172,6 +172,37 @@ def create_cars(i, bottom_top_next_interval, left_right_next_interval, cars, con
         if can_create(cars, Paths.LEFT_RIGHT):
             cars.append(return_car(Paths.LEFT_RIGHT, config))
 
+def update_screen(screen, total_crossings, collisions, interval_count, config):
+    screen.fill((255, 255, 255))
+    rect_width, rect_height = 100, 100
+    rect_x = (SCREEN_WIDTH / 2) - (rect_width / 2)
+    rect_y = (SCREEN_HEIGHT / 2) - (rect_height / 2)
+    pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height), width=5)
+
+    font = pygame.font.Font(None, 16)
+    collision_font = pygame.font.Font(None, 26)
+    interval_font = pygame.font.Font(None, 26)
+
+    params = config.get_parameters()
+    params_text = [
+        f"MAX_VELOCITY: {params['MAX_VELOCITY']}",
+        f"ACCELERATION: {params['ACCELERATION']}",
+        f"COLLISION_DISTANCE: {params['COLLISION_DISTANCE']}",
+    ]
+
+    for idx, text in enumerate(params_text):
+        param_surface = font.render(text, True, (0, 0, 0))
+        screen.blit(param_surface, (10, 10 + idx * 20))
+
+    collisions_text = collision_font.render(f"Collisions: {count_collisions(collisions)}", True, (255, 0, 0))
+    screen.blit(collisions_text, (340, 10))
+
+    crossings_text = collision_font.render(f"Crossings: {total_crossings}", True, (0, 0, 255))
+    screen.blit(crossings_text, (340, 35))
+
+    interval_text = interval_font.render(f"{interval_count}", True, (80, 80, 80))
+    screen.blit(interval_text, (20, SCREEN_HEIGHT - 50))
+
 def run_simulation(config, agent, interval_count=0, collision_records=None, intersection_records=None, reward_records=None, parameter_records=None):
 
     collision_records, intersection_records, reward_records, parameter_records = initialize_records(
@@ -263,35 +294,7 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
 
         handle_events(cars)
 
-        screen.fill((255, 255, 255))
-        rect_width, rect_height = 100, 100
-        rect_x = (SCREEN_WIDTH / 2) - (rect_width / 2)
-        rect_y = (SCREEN_HEIGHT / 2) - (rect_height / 2)
-        pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height), width=5)
-
-        font = pygame.font.Font(None, 16)
-        collision_font = pygame.font.Font(None, 26)
-        interval_font = pygame.font.Font(None, 26)
-
-        params = config.get_parameters()
-        params_text = [
-            f"MAX_VELOCITY: {params['MAX_VELOCITY']}",
-            f"ACCELERATION: {params['ACCELERATION']}",
-            f"COLLISION_DISTANCE: {params['COLLISION_DISTANCE']}",
-        ]
-
-        for idx, text in enumerate(params_text):
-            param_surface = font.render(text, True, (0, 0, 0))
-            screen.blit(param_surface, (10, 10 + idx * 20))
-
-        collisions_text = collision_font.render(f"Collisions: {count_collisions(collisions)}", True, (255, 0, 0))
-        screen.blit(collisions_text, (340, 10))
-
-        crossings_text = collision_font.render(f"Crossings: {total_crossings}", True, (0, 0, 255))
-        screen.blit(crossings_text, (340, 35))
-
-        interval_text = interval_font.render(f"{interval_count}", True, (80, 80, 80))
-        screen.blit(interval_text, (20, SCREEN_HEIGHT - 50))
+        update_screen(screen, total_crossings, collisions, interval_count, config)
 
         for car in cars[:]:
             if car.at_border():
