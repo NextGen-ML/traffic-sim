@@ -125,8 +125,7 @@ def update_parameters(config, action):
         collision_distance=collision_distance,
     )
 
-def run_simulation(config, agent, interval_count=0, collision_records=None, intersection_records=None, reward_records=None, parameter_records=None):
-    print("run")
+def initialize_records(collision_records, intersection_records, reward_records, parameter_records):
     if collision_records is None:
         collision_records = []
     if intersection_records is None:
@@ -135,6 +134,12 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         reward_records = []
     if parameter_records is None:
         parameter_records = []
+    return collision_records, intersection_records, reward_records, parameter_records
+
+def run_simulation(config, agent, interval_count=0, collision_records=None, intersection_records=None, reward_records=None, parameter_records=None):
+
+    collision_records, intersection_records, reward_records, parameter_records = initialize_records(
+        collision_records, intersection_records, reward_records, parameter_records)
 
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
