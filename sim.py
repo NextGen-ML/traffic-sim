@@ -163,6 +163,15 @@ def handle_events(cars):
                 cars[0].set_row(temp)
     return True
 
+def create_cars(i, bottom_top_next_interval, left_right_next_interval, cars, config):
+    if i % bottom_top_next_interval == 0:
+        if can_create(cars, Paths.BOTTOM_TOP):
+            cars.append(return_car(Paths.BOTTOM_TOP, config))
+
+    if i % left_right_next_interval == 0:
+        if can_create(cars, Paths.LEFT_RIGHT):
+            cars.append(return_car(Paths.LEFT_RIGHT, config))
+
 def run_simulation(config, agent, interval_count=0, collision_records=None, intersection_records=None, reward_records=None, parameter_records=None):
 
     collision_records, intersection_records, reward_records, parameter_records = initialize_records(
@@ -250,15 +259,9 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
 
             interval_collisions.clear()
 
-        if i % bottom_top_next_interval == 0:
-            if can_create(cars, Paths.BOTTOM_TOP):
-                cars.append(return_car(Paths.BOTTOM_TOP, config))
+        create_cars(i, bottom_top_next_interval, left_right_next_interval, cars, config)
 
-        if i % left_right_next_interval == 0:
-            if can_create(cars, Paths.LEFT_RIGHT):
-                cars.append(return_car(Paths.LEFT_RIGHT, config))
-
-        # handle_events(cars)
+        handle_events(cars)
 
         screen.fill((255, 255, 255))
         rect_width, rect_height = 100, 100
