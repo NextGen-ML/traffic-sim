@@ -153,6 +153,16 @@ def initialize_state_and_action(agent, bottom_top_next_interval, left_right_next
     action = agent.select_action(state)
     return state, action
 
+def handle_events(cars):
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            return False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_k and cars:
+                temp = not cars[0].get_row() if cars[0].get_row() is not None else False
+                cars[0].set_row(temp)
+    return True
+
 def run_simulation(config, agent, interval_count=0, collision_records=None, intersection_records=None, reward_records=None, parameter_records=None):
 
     collision_records, intersection_records, reward_records, parameter_records = initialize_records(
@@ -248,13 +258,7 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
             if can_create(cars, Paths.LEFT_RIGHT):
                 cars.append(return_car(Paths.LEFT_RIGHT, config))
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_k and cars:
-                    temp = not cars[0].get_row() if cars[0].get_row() is not None else False
-                    cars[0].set_row(temp)
+        # handle_events(cars)
 
         screen.fill((255, 255, 255))
         rect_width, rect_height = 100, 100
