@@ -28,8 +28,6 @@ def train_agent(agent, env, num_episodes):
         # Update the policy at the end of each episode
         agent.update_policy()
 
-        print(f"Episode {episode + 1}: Total Reward: {total_reward}")
-
         # Update the plot after each episode
         update_plot(collision_records, intersection_records, reward_records, fig, ax1, ax2, ax3)
         save_and_plot_data(collision_records, intersection_records, reward_records, parameter_records)
@@ -37,7 +35,6 @@ def train_agent(agent, env, num_episodes):
         # Save the model state dict every 33 episodes
         if (episode + 1) % 33 == 0:
             torch.save(agent.policy_net.state_dict(), f"policy_net_episode_{episode + 1}.pth")
-            print(f"Saved model state dict at episode {episode + 1}")
 
     plt.ioff()
     plt.show()

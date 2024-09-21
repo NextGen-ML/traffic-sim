@@ -54,7 +54,6 @@ class PolicyGradientAgent:
         return clipped_action
 
     def update_policy(self):
-        print("Updating policy network")
         R = 0
         policy_loss = []
         returns = []
@@ -89,7 +88,6 @@ class PolicyGradientAgent:
     def decay_entropy_coeff(self):
         self.update_count += 1
         self.entropy_coeff *= self.entropy_decay
-        print(f"Update {self.update_count}: Entropy Coefficient: {self.entropy_coeff}")
     
     def log_parameters(self, episode):
         print(f"Parameters at Episode {episode}:")

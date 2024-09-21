@@ -184,44 +184,44 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 45005:  
+        if elapsed_time > 45005:
             running = False
 
-        if interval_elapsed_time >= 15000:
-            bottom_top_next_interval = bottom_top_interval + randint(-10, 10)
-            left_right_next_interval = left_right_interval + randint(-10, 10)
-            print(bottom_top_next_interval)
-            interval_count += 1
-            end_collisions = count_collisions(collisions)
-            interval_collisions_count = len(interval_collisions)
+        bottom_top_next_interval = bottom_top_interval + randint(-10, 10)
+        left_right_next_interval = left_right_interval + randint(-10, 10)
+        print(bottom_top_next_interval)
+        end_collisions = count_collisions(collisions)
+        interval_collisions_count = len(interval_collisions)
 
-            reward = interval_crossings - interval_collisions_count * 100
-            reward = max(min(reward, 200), -500)
-            total_reward += reward
-            
-            interval_results.append((interval_collisions_count, interval_crossings, is_first_interval, bottom_top_next_interval, left_right_next_interval, reward))
+        reward = interval_crossings - interval_collisions_count * 100
+        reward = max(min(reward, 200), -500)
+        total_reward += reward
 
-            collision_records.append(interval_collisions_count)
-            intersection_records.append(interval_crossings)
-            reward_records.append(reward)
+        interval_results.append((interval_collisions_count, interval_crossings, is_first_interval, bottom_top_next_interval, left_right_next_interval, reward))
 
-            interval_crossings = 0
-            interval_start_time = current_time
-            is_first_interval = False
+        collision_records.append(interval_collisions_count)
+        intersection_records.append(interval_crossings)
+        reward_records.append(reward)
 
-            last_collisions = interval_collisions_count
-            last_crossings = interval_crossings
+        interval_crossings = 0
+        interval_start_time = current_time
+        is_first_interval = False
 
-            state = np.array([
-                bottom_top_next_interval,
-                left_right_next_interval,
-                1 if is_first_interval else 0,
-                last_collisions,
-            ])
-            print(f"Last Collisions {last_collisions}")
-            action = agent.select_action(state)
+        last_collisions = interval_collisions_count
+        last_crossings = interval_crossings
+
+        state = np.array([
+            bottom_top_next_interval,
+            left_right_next_interval,
+            1 if is_first_interval else 0,
+            last_collisions,
+        ])
+        print(f"Last Collisions {last_collisions}")
+        action = agent.select_action(state)
+        if elapsed_time % 500 == 0:
             update_parameters(config, action)
             parameter_records.append([interval_count, *action])  # Log parameters for each interval
+            interval_count += 1
 
             interval_collisions.clear()
 
