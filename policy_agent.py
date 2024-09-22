@@ -49,13 +49,12 @@ class PolicyGradientAgent:
 
         low = self.env.action_space.low
         high = self.env.action_space.high
-        scaled_action = action * (high - low) / 2 + (high + low) / 2
+        scaled_action = low + (action + 1.0) * 0.5 * (high - low)
         clipped_action = np.clip(scaled_action, low, high)
         return clipped_action
 
     def update_policy(self):
         R = 0
-        policy_loss = []
         returns = []
         # print(self.rewards)
         # Calculate the discounted returns
@@ -64,9 +63,6 @@ class PolicyGradientAgent:
             returns.insert(0, R)
 
         returns = torch.tensor(returns)
-
-        for (log_prob, entropy), R in zip(self.episode_log_probs, returns):
-            policy_loss.append(-log_prob * R - self.entropy_coeff * entropy)
 
         self.optimizer.zero_grad()
         policy_loss = -torch.mean(torch.stack([log_prob * R + self.entropy_coeff * entropy for (log_prob, entropy), R in zip(self.episode_log_probs, returns)]))

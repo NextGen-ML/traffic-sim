@@ -223,8 +223,6 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
     running = True
     start_time = pygame.time.get_ticks()
 
-    fig, ax1, ax2, ax3 = initialize_plot()
-
     cars = []
     bottom_top_interval = 75
     left_right_interval = 75
@@ -291,9 +289,9 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
             last_collisions,
         ])
         action = agent.select_action(state)
-        if interval_elapsed_time > 2500 == 0:
+        if interval_elapsed_time > 2500:
             update_parameters(config, action)
-            parameter_records.append([interval_count, *action])  # Log parameters for each interval
+            parameter_records.append([interval_count, *action])
             interval_count += 1
 
             interval_collisions.clear()

@@ -61,21 +61,25 @@ class IntersectionEnv(gym.Env):
         last_collisions = interval_results[-1][0] if interval_results else 0
         last_crossings = interval_results[-1][1] if interval_results else 0
 
-        obs = self._get_state(is_first_interval, bottom_top_next_interval, left_right_next_interval, last_collisions, last_crossings)
+        obs = self._get_state(is_first_interval, bottom_top_next_interval, left_right_next_interval, last_collisions)
         done = len(self.collision_records) >= 3
 
         return obs, reward, done, {}
 
-    def _get_state(self, is_first_interval=False, bottom_top_next_interval=0, left_right_next_interval=0, last_collisions=0, last_crossings=0):
+    def _get_state(self, is_first_interval=False, bottom_top_next_interval=0, left_right_next_interval=0,
+                   last_collisions=0):
         state = np.array([
             bottom_top_next_interval,
             left_right_next_interval,
             1 if is_first_interval else 0,
-            last_collisions,   
+            last_collisions,
         ], dtype=np.float32)
 
-        normalized_state = (state - self.state_mean) / self.state_std
+        # Update these to match the new state size
+        self.state_mean = np.array([75, 75, 0.33, 0, 0])
+        self.state_std = np.array([10, 10, 0.33, 1, 1])
 
+        normalized_state = (state - self.state_mean) / self.state_std
         return normalized_state
 
     def render(self, mode='human'):
