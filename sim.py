@@ -269,15 +269,9 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         reward = max(min(reward, 200), -500)
         total_reward += reward
 
-        interval_results.append((interval_collisions_count, interval_crossings, is_first_interval, bottom_top_next_interval, left_right_next_interval, reward))
-
         collision_records.append(interval_collisions_count)
         intersection_records.append(interval_crossings)
         reward_records.append(reward)
-
-        interval_crossings = 0
-        interval_start_time = current_time
-        is_first_interval = False
 
         last_collisions = interval_collisions_count
         last_crossings = interval_crossings
@@ -293,8 +287,11 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
             update_parameters(config, action)
             parameter_records.append([interval_count, *action])
             interval_count += 1
-
+            is_first_interval = False
+            interval_results.append((interval_collisions_count, interval_crossings, is_first_interval, bottom_top_next_interval, left_right_next_interval, reward))
             interval_collisions.clear()
+            interval_start_time = current_time
+            interval_crossings = 0
             interval_elapsed_time = 0
 
         create_cars(i, bottom_top_next_interval, left_right_next_interval, cars, config)
@@ -327,8 +324,6 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         pygame.display.flip()
         clock.tick(144)
         i += 1
-
-    print(interval_results)
 
     pygame.quit()
     return interval_results, bottom_top_next_interval, left_right_next_interval, total_reward, collision_records, intersection_records, reward_records, interval_count, parameter_records

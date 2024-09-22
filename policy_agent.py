@@ -56,7 +56,6 @@ class PolicyGradientAgent:
     def update_policy(self):
         R = 0
         returns = []
-        # print(self.rewards)
         # Calculate the discounted returns
         for r in self.rewards[::-1]:
             R = r + self.gamma * R
