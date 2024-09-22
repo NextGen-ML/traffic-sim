@@ -5,13 +5,14 @@ import torch.nn.functional as F
 from torch.distributions import Normal
 import numpy as np
 
+
 class PolicyNetwork(nn.Module):
     def __init__(self, input_size, output_size):
         super(PolicyNetwork, self).__init__()
         self.fc1 = nn.Linear(input_size, 64)
         self.fc2 = nn.Linear(64, output_size)
         self.log_std = nn.Parameter(torch.full((output_size,), -1.0))
-        
+
         # Initialize weights
         nn.init.xavier_uniform_(self.fc1.weight)
         nn.init.xavier_uniform_(self.fc2.weight)
@@ -19,9 +20,7 @@ class PolicyNetwork(nn.Module):
     def forward(self, x):
         x = F.leaky_relu(self.fc1(x))
         mu = F.tanh(self.fc2(x) * 0.035)
-        # print(mu)
         std = F.softplus(self.log_std).expand_as(mu)
-        # print(std)
         return mu, std
 
 class PolicyGradientAgent:
@@ -35,7 +34,7 @@ class PolicyGradientAgent:
         self.entropy_decay = entropy_decay
         self.gamma = gamma
         self.rewards = []
-        self.update_count = 0 
+        self.update_count = 0
 
     def select_action(self, state):
         state = torch.FloatTensor(state).unsqueeze(0)
@@ -56,15 +55,23 @@ class PolicyGradientAgent:
     def update_policy(self):
         R = 0
         returns = []
+
         # Calculate the discounted returns
         for r in self.rewards[::-1]:
             R = r + self.gamma * R
             returns.insert(0, R)
-
         returns = torch.tensor(returns)
 
+        # Calculate policy loss
+        policy_losses = []
+        for (log_prob, entropy), R in zip(self.episode_log_probs, returns):
+            policy_losses.append(-log_prob * R - self.entropy_coeff * entropy)
+        policy_loss = torch.mean(torch.stack(policy_losses))
+
+        print(policy_loss)
+
+        # Backpropagation and optimization step
         self.optimizer.zero_grad()
-        policy_loss = -torch.mean(torch.stack([log_prob * R + self.entropy_coeff * entropy for (log_prob, entropy), R in zip(self.episode_log_probs, returns)]))
         policy_loss.backward()
         torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1.5)
         self.optimizer.step()
@@ -83,9 +90,3 @@ class PolicyGradientAgent:
     def decay_entropy_coeff(self):
         self.update_count += 1
         self.entropy_coeff *= self.entropy_decay
-    
-    def log_parameters(self, episode):
-        print(f"Parameters at Episode {episode}:")
-        for name, param in self.policy_net.named_parameters():
-            if param.requires_grad:
-                print(f"{name}: {param.data}")

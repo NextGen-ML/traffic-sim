@@ -169,17 +169,34 @@ def update_plot(collision_records, intersection_records, reward_records, fig, ax
     fig.canvas.draw()
     fig.canvas.flush_events()
 
-def save_and_plot_data(collision_records, intersection_records, reward_records, parameter_records):
+
+def save_and_plot_data(interval_count, collision_records, intersection_records, reward_records, parameter_records):
+    # Ensure all inputs are lists
+    if not isinstance(interval_count, list):
+        interval_count = [interval_count]
+    if not isinstance(collision_records, list):
+        collision_records = [collision_records]
+    if not isinstance(intersection_records, list):
+        intersection_records = [intersection_records]
+    if not isinstance(reward_records, list):
+        reward_records = [reward_records]
+
+    # Create DataFrame
     data = pd.DataFrame({
-        'Interval': range(1, len(collision_records) + 1),
+        'Interval': interval_count,
         'Collisions': collision_records,
         'Crossings': intersection_records,
         'Rewards': reward_records
     })
-    data.to_csv('simulation_data.csv', index=False)
-    
+
+    # Append the data to the CSV file without overwriting
+    data.to_csv('simulation_data.csv', mode='a', header=not pd.io.common.file_exists('simulation_data.csv'), index=False)
+
+    # Create a DataFrame for the current interval's parameters
     parameters_data = pd.DataFrame(parameter_records, columns=['Interval', 'Max_Velocity', 'Acceleration', 'Collision_Distance'])
-    parameters_data.to_csv('parameter_data.csv', index=False)
+
+    # Append the parameters data to the CSV file without overwriting
+    parameters_data.to_csv('parameter_data.csv', mode='a', header=not pd.io.common.file_exists('parameter_data.csv'), index=False)
 
 # --- AGENT AND INTERSECTION FLOW ---
 def update_parameters(config, action):
@@ -247,7 +264,7 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
     i = 0  # Initialize the loop counter
 
     state, action = initialize_state_and_action(agent, bottom_top_next_interval, left_right_next_interval,
-                                                1 if is_first_interval else 0, 0) #TODO: Why are the collisions set to 0?
+                                                1 if is_first_interval else 0, 0)
 
     update_parameters(config, action)
     parameter_records.append([interval_count, *action])  # Log initial parameters
@@ -257,7 +274,7 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 15005:
+        if elapsed_time > 40005:
             running = False
 
         bottom_top_next_interval = bottom_top_interval + randint(-10, 10)
@@ -283,16 +300,17 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
             last_collisions,
         ])
         action = agent.select_action(state)
-        if interval_elapsed_time > 2500:
+        if interval_elapsed_time > 10000:
             update_parameters(config, action)
             parameter_records.append([interval_count, *action])
             interval_count += 1
             is_first_interval = False
             interval_results.append((interval_collisions_count, interval_crossings, is_first_interval, bottom_top_next_interval, left_right_next_interval, reward))
-            interval_collisions.clear()
             interval_start_time = current_time
+            save_and_plot_data(interval_count, interval_collisions_count, interval_crossings, reward, parameter_records)
             interval_crossings = 0
             interval_elapsed_time = 0
+            interval_collisions.clear()
 
         create_cars(i, bottom_top_next_interval, left_right_next_interval, cars, config)
 

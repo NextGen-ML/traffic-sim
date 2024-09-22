@@ -30,7 +30,7 @@ def train_agent(agent, env, num_episodes):
 
         # Update the plot after each episode
         update_plot(collision_records, intersection_records, reward_records, fig, ax1, ax2, ax3)
-        save_and_plot_data(collision_records, intersection_records, reward_records, parameter_records)
+        # save_and_plot_data(collision_records, intersection_records, reward_records, parameter_records)
 
         # Save the model state dict every 33 episodes
         if (episode + 1) % 33 == 0:
