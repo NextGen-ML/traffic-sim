@@ -291,6 +291,7 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         last_collisions = interval_collisions_count
         last_crossings = interval_crossings
 
+
         if interval_elapsed_time > 10000: # TODO: Adjust sequence and make code cleaner
             bottom_top_next_interval = bottom_top_interval + randint(-10, 10)
             left_right_next_interval = left_right_interval + randint(-10, 10)
