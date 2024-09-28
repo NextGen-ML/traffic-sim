@@ -277,8 +277,6 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         if elapsed_time > 40005:
             running = False
 
-        bottom_top_next_interval = bottom_top_interval + randint(-10, 10)
-        left_right_next_interval = left_right_interval + randint(-10, 10)
         end_collisions = count_collisions(collisions)
         interval_collisions_count = len(interval_collisions)
 
@@ -293,14 +291,18 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         last_collisions = interval_collisions_count
         last_crossings = interval_crossings
 
-        state = np.array([
-            bottom_top_next_interval,
-            left_right_next_interval,
-            1 if is_first_interval else 0,
-            last_collisions,
-        ])
-        action = agent.select_action(state)
-        if interval_elapsed_time > 10000:
+        if interval_elapsed_time > 10000: # TODO: Adjust sequence and make code cleaner
+            bottom_top_next_interval = bottom_top_interval + randint(-10, 10)
+            left_right_next_interval = left_right_interval + randint(-10, 10)
+
+            state = np.array([
+                bottom_top_next_interval,
+                left_right_next_interval,
+                1 if is_first_interval else 0,
+                last_collisions,
+            ])
+
+            action = agent.select_action(state)
             update_parameters(config, action)
             parameter_records.append([interval_count, *action])
             interval_count += 1
