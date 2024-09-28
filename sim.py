@@ -348,5 +348,6 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
     pygame.quit()
     return interval_results, bottom_top_next_interval, left_right_next_interval, total_reward, collision_records, intersection_records, reward_records, interval_count, parameter_records
 
+
 if __name__ == "__main__":
     print("Please run `train.py` to test the simulation")
