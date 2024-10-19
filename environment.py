@@ -24,7 +24,7 @@ class IntersectionEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0,
             high=np.inf,
-            shape=(4,),
+            shape=(2,),
             dtype=np.float32
         )
         self.collision_records = []
@@ -53,7 +53,7 @@ class IntersectionEnv(gym.Env):
             total_crossings += interval_crossings
             total_collisions += interval_collisions
 
-        reward = total_crossings - total_collisions * 100
+        reward =  50
         reward = max(min(reward, 200), -500)
         self.reward_records.append(reward)
 
@@ -69,15 +69,13 @@ class IntersectionEnv(gym.Env):
     def _get_state(self, is_first_interval=False, bottom_top_next_interval=0, left_right_next_interval=0,
                    last_collisions=0):
         state = np.array([
-            bottom_top_next_interval,
-            left_right_next_interval,
             1 if is_first_interval else 0,
             last_collisions,
         ], dtype=np.float32)
 
         # Update these to match the new state size
-        self.state_mean = np.array([75, 75, 0.33, 0, 0])
-        self.state_std = np.array([10, 10, 0.33, 1, 1])
+        self.state_mean = np.array([0.33, 0.5])
+        self.state_std = np.array([0.33, 1])
 
         normalized_state = (state - self.state_mean) / self.state_std
         return normalized_state

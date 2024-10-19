@@ -58,6 +58,7 @@ class PolicyGradientAgent:
 
         # Calculate the discounted returns
         for r in self.rewards[::-1]:
+            print(r)
             R = r + self.gamma * R
             returns.insert(0, R)
         returns = torch.tensor(returns)

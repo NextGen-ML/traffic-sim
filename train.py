@@ -1,3 +1,4 @@
+import os
 from policy_agent import PolicyGradientAgent
 from environment import IntersectionEnv, four_way
 from config import Config
@@ -40,6 +41,15 @@ def train_agent(agent, env, num_episodes):
     plt.show()
 
 if __name__ == "__main__":
+
+    parameter_path = "parameter_data.csv"
+    simulation_path = "simulation_data.csv"
+    if os.path.exists(parameter_path):
+        os.remove(parameter_path)
+    if os.path.exists(simulation_path):
+        os.remove(simulation_path)
+
+
     config = Config()
     env = IntersectionEnv(config, four_way, None)
     agent = PolicyGradientAgent(env)

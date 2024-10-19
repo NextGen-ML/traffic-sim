@@ -9,8 +9,8 @@ from collections import defaultdict
 import numpy as np
 
 # --- CONSTANTS ---
-MAX_CARS_PER_DIRECTION = 5
-MAX_TOTAL_CARS = 8
+MAX_CARS_PER_DIRECTION = 7
+MAX_TOTAL_CARS = 12
 
 # --- SIMULATION WINDOW ---
 
@@ -220,8 +220,6 @@ def initialize_records(collision_records, intersection_records, reward_records, 
 
 def initialize_state_and_action(agent, bottom_top_next_interval, left_right_next_interval, is_first_interval, last_collisions):
     state = np.array([
-        bottom_top_next_interval,
-        left_right_next_interval,
         1 if is_first_interval else 0,
         last_collisions
     ])
@@ -274,31 +272,34 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
         elapsed_time = current_time - start_time
         interval_elapsed_time = current_time - interval_start_time
 
-        if elapsed_time > 40005:
+        if elapsed_time > 45020:
             running = False
 
         end_collisions = count_collisions(collisions)
-        interval_collisions_count = len(interval_collisions)
 
-        reward = interval_crossings - interval_collisions_count * 100
-        reward = max(min(reward, 200), -500)
-        total_reward += reward
+        if interval_elapsed_time > 15000:
 
-        collision_records.append(interval_collisions_count)
-        intersection_records.append(interval_crossings)
-        reward_records.append(reward)
+            # NOTE: Moved reward calculation into if block
+            interval_collisions_count = len(interval_collisions)
 
-        last_collisions = interval_collisions_count
-        last_crossings = interval_crossings
+            reward = - 5 * interval_collisions_count
+            if reward == 0:
+                reward += 10
 
+            reward = max(min(reward, 200), -500)
+            total_reward += reward
 
-        if interval_elapsed_time > 10000: # TODO: Adjust sequence and make code cleaner
-            bottom_top_next_interval = bottom_top_interval + randint(-10, 10)
-            left_right_next_interval = left_right_interval + randint(-10, 10)
+            collision_records.append(interval_collisions_count)
+            intersection_records.append(interval_crossings)
+            reward_records.append(reward)
+
+            last_collisions = interval_collisions_count
+            last_crossings = interval_crossings
+
+            bottom_top_next_interval = 75
+            left_right_next_interval = 75
 
             state = np.array([
-                bottom_top_next_interval,
-                left_right_next_interval,
                 1 if is_first_interval else 0,
                 last_collisions,
             ])
