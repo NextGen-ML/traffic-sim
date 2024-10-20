@@ -19,12 +19,12 @@ class PolicyNetwork(nn.Module):
 
     def forward(self, x):
         x = F.leaky_relu(self.fc1(x))
-        mu = F.tanh(self.fc2(x) * 0.035)
+        mu = F.tanh(self.fc2(x))
         std = F.softplus(self.log_std).expand_as(mu)
         return mu, std
 
 class PolicyGradientAgent:
-    def __init__(self, env, entropy_coeff=0.01, gamma=0.65, learning_rate=0.002, entropy_decay=0.975):
+    def __init__(self, env, entropy_coeff=0.01, gamma=0.65, learning_rate=0.003, entropy_decay=0.975):
         self.env = env
         self.policy_net = PolicyNetwork(env.observation_space.shape[0], env.action_space.shape[0])
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)

@@ -16,12 +16,11 @@ def train_agent(agent, env, num_episodes):
     collision_records = []
     intersection_records = []
     reward_records = []
-    parameter_records = []  # List to store parameters for each interval
     interval_count = 0
 
     for episode in range(num_episodes):
         # agent.log_parameters(episode)
-        interval_results, bottom_top_next_interval, left_right_next_interval, total_reward, collision_records, intersection_records, reward_records, interval_count, parameter_records = run_simulation(env.config, agent, interval_count, collision_records, intersection_records, reward_records, parameter_records)
+        interval_results, bottom_top_next_interval, left_right_next_interval, total_reward, collision_records, intersection_records, reward_records, interval_count, parameter_records = run_simulation(env.config, agent, interval_count, collision_records, intersection_records, reward_records)
 
         # Store rewards collected during simulation
         for _, _, _, _, _, reward in interval_results:

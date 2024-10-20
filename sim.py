@@ -265,7 +265,6 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
                                                 1 if is_first_interval else 0, 0)
 
     update_parameters(config, action)
-    parameter_records.append([interval_count, *action])  # Log initial parameters
 
     while running:
         current_time = pygame.time.get_ticks()
@@ -282,9 +281,8 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
             # NOTE: Moved reward calculation into if block
             interval_collisions_count = len(interval_collisions)
 
-            reward = - 5 * interval_collisions_count
-            if reward == 0:
-                reward += 10
+            reward = interval_crossings - interval_collisions_count * 100
+            print(interval_crossings)
 
             reward = max(min(reward, 200), -500)
             total_reward += reward
@@ -312,6 +310,7 @@ def run_simulation(config, agent, interval_count=0, collision_records=None, inte
             interval_results.append((interval_collisions_count, interval_crossings, is_first_interval, bottom_top_next_interval, left_right_next_interval, reward))
             interval_start_time = current_time
             save_and_plot_data(interval_count, interval_collisions_count, interval_crossings, reward, parameter_records)
+            parameter_records.clear()
             interval_crossings = 0
             interval_elapsed_time = 0
             interval_collisions.clear()
